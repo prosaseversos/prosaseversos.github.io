@@ -157,9 +157,25 @@ vibra e cansa em leitura longa.
 
 ## Publicar
 
-**Do Mac:** duplo clique em `run.command` para ver antes. Depois:
+**Do Mac:** duplo clique em **`publicar.command`**. Ele gera, pergunta uma
+descrição e sobe. Nenhum comando de terminal.
 
-    git add -A && git commit -m "novo poema" && git push
+Os três atalhos, na ordem em que se usam:
+
+| duplo clique em | faz |
+|-----------------|-----|
+| `importar.command` | traz Word/PDF de `entrada/`, regera e abre para conferir |
+| `run.command` | só regera e abre, para ver antes de publicar |
+| `publicar.command` | manda para o site e **espera a confirmação do GitHub** |
+
+`publicar.command` faz, nesta ordem e por um motivo cada:
+1. **Gera antes de enviar** — se o gerador reclamar, nada sobe.
+2. **`git pull --rebase` antes do push** — traz o que foi escrito pelo celular.
+   Sem isso, HD e GitHub viram duas cópias que divergem.
+3. **Espera o GitHub Actions terminar** — o push só entrega os arquivos; quem
+   monta e publica é o Actions, e é ele que pode falhar. Dar o push por
+   publicação é como dar o deploy por concluído sem conferir: foi assim que o
+   ADM_PRO passou 5 dias fora do ar.
 
 **Do celular:** github.com → pasta da seção → "Add file" → escrever → "Commit".
 O site se refaz sozinho.
