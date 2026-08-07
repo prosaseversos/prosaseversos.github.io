@@ -173,7 +173,9 @@ textarea:focus{outline:0}
       <button id="abrirArquivo">Importar Word</button>
       <input id="arquivo" type="file" accept=".docx,.txt,.md" class="oculto">
       <button id="publicar" class="principal">Publicar</button>
-      <button id="sair" class="perigo" title="Esquecer o token neste aparelho">Sair</button>
+      <button id="apagar" class="perigo" disabled
+              title="Tirar este texto do site">Apagar</button>
+      <button id="sair" title="Esquecer o token neste aparelho">Sair</button>
     </div>
   </header>
 
@@ -430,6 +432,7 @@ async function abrir(item) {
     $("#secao").value = item.secao.pasta;
     $("#texto").value = corpo.trim();
     sujo = false;
+    $("#apagar").disabled = false;     // há o que apagar: este texto existe no site
     limparRecado();
     desenharLista();
     atualizarPrevia();
@@ -443,6 +446,7 @@ function novo() {
   $("#data").value = new Date().toISOString().slice(0, 10);
   $("#texto").value = "";
   sujo = false;
+  $("#apagar").disabled = true;      // texto novo não existe no site: nada a apagar
   limparRecado();
   desenharLista();
   atualizarPrevia();
@@ -523,6 +527,38 @@ async function acompanharPublicacao() {
                + "Veja o motivo em github.com/" + DONO + "/" + REPO + "/actions", "erro");
       return;
     }
+  }
+}
+
+/* ── Apagar ───────────────────────────────────────────────────────────────────
+   Só age sobre texto já publicado (`atual`); texto novo não tem o que apagar.
+   O arquivo sai do repositório, mas continua no histórico do git — se você
+   apagar por engano, dá para recuperar. Mesmo assim, pergunta antes: o endereço
+   morre na hora e quem tiver o link cai numa página que não existe. */
+async function apagar() {
+  if (!atual) return;
+  const titulo = $("#titulo").value.trim() || atual.caminho;
+  if (!confirm(`Tirar "${titulo}" do site?\n\n`
+               + "O endereço deixa de existir e quem tiver o link cai em página "
+               + "não encontrada. O texto continua no histórico do repositório, "
+               + "então dá para recuperar depois."))
+    return;
+
+  $("#apagar").disabled = true;
+  try {
+    recado("Apagando…");
+    await api(`/contents/${atual.caminho}`, {
+      method: "DELETE",
+      body: JSON.stringify({message: `Removido: ${titulo}`, sha: atual.sha}),
+    });
+    recado(`"${titulo}" saiu do site. O site se refaz em cerca de 1 minuto.`, "ok");
+    sujo = false;
+    await carregarIndice();
+    novo();
+    acompanharPublicacao();
+  } catch (e) {
+    recado("Não apagou: " + e.message, "erro");
+    $("#apagar").disabled = false;
   }
 }
 
@@ -611,6 +647,7 @@ async function importar(arquivo) {
 
     if (!confirmarPerda()) return;
     atual = null;
+    $("#apagar").disabled = true;      // ainda não está no site
 
     // Primeira linha curta, sem pontuação de fim e seguida de linha vazia: título.
     const linhas = texto.split("\n");
@@ -669,6 +706,7 @@ $("#token").onkeydown = e => { if (e.key === "Enter") $("#entrar").click(); };
 
 $("#novo").onclick = novo;
 $("#publicar").onclick = publicar;
+$("#apagar").onclick = apagar;
 $("#abrirArquivo").onclick = () => $("#arquivo").click();
 $("#arquivo").onchange = e => { if (e.target.files[0]) importar(e.target.files[0]); e.target.value = ""; };
 $("#sair").onclick = () => {
