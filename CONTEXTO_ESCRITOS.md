@@ -1,19 +1,25 @@
-# Tinta Lenta — site de poesia, composições, textos e artigos
+# Prosas e Versos — site de poesia, composições, textos e artigos
 
 Site estático, hospedado de graça no GitHub Pages. Custo mensal: **R$ 0**.
 Só o domínio próprio (opcional, `nome.com.br` no Registro.br, ~R$ 40/ano) cobraria.
 
-**"Tinta Lenta" é nome fictício, por escolha.** O nome pessoal não aparece no site
-nem no `autor` do `site.json`. Consequência a ter em conta: ninguém chega aqui
-buscando "André Boschetti" — o Google traz leitor **pelo conteúdo** (o verso, o
-tema do artigo), não pelo nome. Para inverter isso um dia, basta trocar `nome` e
-`autor` no `site.json` e republicar.
+**O nome pessoal não aparece em lugar nenhum**, por escolha: nem no site, nem no
+`autor` do `site.json`, nem na URL. Foi por isso que o site vive numa conta GitHub
+própria (`prosaseversos`) e não na pessoal — repositório de site do GitHub Pages
+herda o nome do dono na URL, e `boschettiandre.github.io` estamparia o nome.
+Consequência a ter em conta: ninguém chega aqui buscando "André Boschetti" — o
+Google traz leitor **pelo conteúdo** (o verso, o tema do artigo), não pelo nome.
 
 ## Onde mora
 
 - **Código e textos:** `/Volumes/AndreSA/SISTEMAS DO CLAUDE/Escritos/` (o HD, como os demais)
-- **No ar:** https://boschettiandre.github.io — usuário GitHub `boschettiandre`
+- **No ar:** https://prosaseversos.github.io
+- **Conta GitHub:** `prosaseversos` — **separada** da pessoal `boschettiandre`
 - **Publicação:** `git push` na `main` → GitHub Actions roda `gerar.py` → site sobe em ~1 min
+
+⚠️ **Uma chave SSH pertence a uma conta só, no GitHub.** A `~/.ssh/github_ed25519`
+está registrada na conta `prosaseversos`. Se um dia ela for para a `boschettiandre`,
+o push deste site passa a ser recusado — e a mensagem de erro não diz o motivo.
 
 ## Seções
 
@@ -84,6 +90,24 @@ Formatação disponível em todos: `*itálico*`, `**negrito**`, `## subtítulo`,
 outro — são os mesmos seis nomes de cor, e cada uma já vem com sua versão para
 modo escuro. Nenhuma usa preto puro sobre branco puro: no contraste máximo o texto
 vibra e cansa em leitura longa.
+
+## A primeira publicação (uma vez só)
+
+1. **Chave SSH** — `~/.ssh/github_ed25519`, criada só para o GitHub e registrada na
+   conta **`prosaseversos`** (github.com/settings/keys, logado como ela). A chave do
+   ADM_PRO (`admpro_ed25519`) continua intacta; o `~/.ssh/config` diz qual usar para
+   cada host, com `IdentitiesOnly yes` — sem isso o ssh oferece a chave errada
+   primeiro e o GitHub recusa.
+2. **Repositório** `prosaseversos.github.io`, na conta `prosaseversos`, **público**.
+   O nome não é escolha estética: repositório com o nome exato do dono é o que dá a
+   URL raiz `https://prosaseversos.github.io`. Qualquer outro nome empurra o site
+   para `https://prosaseversos.github.io/nome-do-repo/`, e aí a `url` do `site.json`
+   precisa acompanhar. Público é exigência do GitHub Pages no plano gratuito.
+3. **Ligar o Pages** — no repositório: Settings → Pages → *Source:* **GitHub Actions**.
+   Sem este passo o Actions roda, fica verde, e nada vai para o ar.
+4. **Search Console** — search.google.com/search-console, adicionar o site e enviar
+   `sitemap.xml`. É o passo que efetivamente liga o Google; sem ele o buscador acha
+   o site sozinho, mas leva semanas.
 
 ## Publicar
 

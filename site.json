@@ -1,11 +1,11 @@
 {
-  "nome": "Tinta Lenta",
+  "nome": "Prosas e Versos",
   "subtitulo": "poesia, composições, textos e artigos",
-  "autor": "Tinta Lenta",
-  "descricao": "Poesia, composições, textos e artigos. Escrita sem pressa.",
+  "autor": "Prosas e Versos",
+  "descricao": "Poesia, composições, textos e artigos. Prosas e Versos.",
 
-  "_url": "⚠️ Precisa bater com o nome do repositório no GitHub. Se o repositório se chamar boschettiandre.github.io, a URL é esta. Se for outro nome, vira https://boschettiandre.github.io/nome-do-repo. Errar aqui aponta canonical, sitemap e Open Graph para endereço que não existe.",
-  "url": "https://boschettiandre.github.io",
+  "_url": "⚠️ O GitHub só dá esta URL raiz quando o repositório se chama EXATAMENTE igual ao dono: conta prosaseversos + repositório prosaseversos.github.io. Com qualquer outro nome de repositório o site vai parar em https://prosaseversos.github.io/nome-do-repo/ e esta linha precisa acompanhar — canonical, sitemap e Open Graph saem todos daqui.",
+  "url": "https://prosaseversos.github.io",
 
   "idioma": "pt-BR",
   "email": "",

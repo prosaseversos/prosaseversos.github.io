@@ -31,6 +31,8 @@ import unicodedata
 from datetime import date, datetime
 from pathlib import Path
 
+import marca
+
 RAIZ = Path(__file__).resolve().parent
 SAIDA = RAIZ / "_site"
 TEXTOS = RAIZ / "conteudo"
@@ -253,6 +255,12 @@ def pagina(cfg, *, titulo, descricao, caminho, conteudo, jsonld=None, capa=False
         f'<link rel="canonical" href="{e(url)}">',
         f'<link rel="alternate" type="application/rss+xml" title="{e(cfg["nome"])}" href="{e(cfg["url"])}/feed.xml">',
         f'<link rel="stylesheet" href="{prof}estilo.css">',
+        # SVG primeiro: é o que os navegadores atuais preferem, e é o único que
+        # troca de cor sozinho quando a aba está no tema escuro. O PNG fica de
+        # reserva para quem não lê SVG, e o apple-touch-icon é o da tela do iPhone.
+        f'<link rel="icon" type="image/svg+xml" href="{prof}favicon.svg">',
+        f'<link rel="icon" type="image/png" sizes="32x32" href="{prof}favicon.png">',
+        f'<link rel="apple-touch-icon" href="{prof}apple-touch-icon.png">',
         f'<meta property="og:type" content="{"website" if capa else "article"}">',
         f'<meta property="og:title" content="{e(titulo_aba)}">',
         f'<meta property="og:description" content="{e(descricao)}">',
@@ -278,7 +286,7 @@ def pagina(cfg, *, titulo, descricao, caminho, conteudo, jsonld=None, capa=False
 <body>
 <a class="pular" href="#conteudo">Ir para o conteúdo</a>
 <header class="topo">
-  <a class="marca" href="{prof}">{e(cfg['nome'])}</a>
+  <a class="marca" href="{prof}">{marca.svg_inline()}<span>{e(cfg['nome'])}</span></a>
   <nav>{menu}</nav>
 </header>
 <main id="conteudo">
@@ -413,6 +421,15 @@ def gerar():
     css = TEMA / "estilo.css"
     if css.exists():
         shutil.copy(css, SAIDA / "estilo.css")
+
+    # Ícones. O `favicon.ico` existe porque o navegador o pede na raiz por conta
+    # própria, sem olhar as tags do <head> — e 404 repetido polui log e é feio.
+    png32 = marca.png(32)
+    (SAIDA / "favicon.svg").write_text(marca.svg_favicon(), encoding="utf-8")
+    (SAIDA / "favicon.png").write_bytes(png32)
+    (SAIDA / "favicon.ico").write_bytes(marca.ico(png32))
+    (SAIDA / "apple-touch-icon.png").write_bytes(
+        marca.png(180, fundo=marca.PAPEL))   # iOS pinta de preto o que for transparente
     # `.nojekyll`: sem ele o GitHub Pages passa tudo pelo Jekyll e engole arquivos
     # e pastas que começam com `_`.
     (SAIDA / ".nojekyll").write_text("")

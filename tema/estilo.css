@@ -141,6 +141,9 @@ a:hover { color: var(--acento); text-decoration-color: var(--acento); }
 }
 
 .marca {
+  display: inline-flex;
+  align-items: center;
+  gap: .58rem;
   font-size: 1.02rem;
   letter-spacing: .09em;
   text-transform: uppercase;
@@ -148,6 +151,15 @@ a:hover { color: var(--acento); text-decoration-color: var(--acento); }
   color: var(--suave);
 }
 .marca:hover { color: var(--tinta); }
+
+/* O símbolo: três barras iguais (prosa) e três desiguais (verso). Fica na cor de
+   acento mesmo quando o nome ao lado esmaece — é ele que carrega a identidade. */
+.marca .simbolo {
+  width: 1.5em;
+  height: 1.5em;
+  flex: none;
+  color: var(--acento);
+}
 
 .topo nav {
   display: flex;
