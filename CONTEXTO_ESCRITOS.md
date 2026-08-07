@@ -37,6 +37,52 @@ Não tem servidor, não tem banco, não tem processo rodando. Nada para reinicia
 nada para cair. É a diferença deliberada em relação ao Flamma e ao ADM_PRO:
 este projeto **não** disputa manutenção com os sistemas de produção.
 
+## Importar do Word, do PDF, do que já está escrito
+
+Arraste os arquivos para a subpasta da seção e dê duplo clique em
+`importar.command` (ele importa, regera o site e abre para conferir):
+
+    entrada/poesia/meu-poema.docx
+    entrada/artigos/ensaio.pdf
+
+| formato | como é lido |
+|---------|-------------|
+| `.docx` | leitura própria do XML, só stdlib |
+| `.doc` `.rtf` `.odt` `.html` | `textutil`, nativo do macOS |
+| `.pdf` | `pdftotext -layout`; se faltar, `pypdf` |
+| `.txt` `.md` | direto (tenta UTF-8, cp1252, latin-1) |
+| `.pages` | **não dá** — no Pages: Arquivo → Exportar para → Word |
+
+**A seção vem da pasta em que você soltou o arquivo**, não de adivinhação. Chutar
+se um texto é poema ou crônica erra justamente nos casos interessantes: o poema em
+prosa, a crônica em versos. O importador só *avisa* quando a pasta e a cara do
+texto discordam — e nunca corrige por conta própria.
+
+### O que o importador faz de diferente
+
+- **Shift+Enter do Word vira quebra de verso.** No .docx isso é `<w:br/>` dentro
+  do parágrafo, e as bibliotecas comuns descartam — a estrofe chegaria numa linha
+  só. Por isso o XML é lido à mão. Tabulação vira recuo, que em poesia é forma.
+- **Em prosa, o parágrafo é remontado.** No PDF a linha acaba onde a margem
+  mandou, não onde o autor quis; deixar essas quebras faria o site colar as linhas
+  com espaço no meio. Hífen de fim de linha é colado (translineação) e o relatório
+  diz quantas vezes, porque de vez em quando era palavra composta.
+- **Em verso, nunca se junta nada.** A quebra é o texto.
+- **Número de página solto** (linha só com dígitos, típico de PDF) é removido, e o
+  relatório conta quantas saíram.
+- **O original é movido, nunca apagado**, para `entrada/_ja-importados/`.
+
+### O que conferir depois de importar
+
+⚠️ **A data.** Vem da data de modificação do arquivo, que raramente é a data em
+que o texto foi escrito. O importador não tem como saber — ajuste o `data:`.
+⚠️ **PDF escaneado não tem texto**, só imagem. O importador diz isso em vez de
+gerar arquivo vazio; precisaria de OCR.
+
+**Este importador não é dependência do site.** `gerar.py` continua sem nenhuma, e
+o GitHub Actions só roda ele. `pdftotext`/`pypdf` são ferramenta de escrivaninha e
+só precisam existir aqui no Mac.
+
 ## Como escrever um texto
 
 Crie um `.md` na pasta da seção:
