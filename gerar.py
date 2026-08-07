@@ -413,9 +413,18 @@ def gerar():
                  '<p class="vazio">O endereço pode ter mudado. '
                  '<a href="./">Voltar ao começo</a>.</p>'))
 
+    # Painel de escrita, quando existe. Roda inteiro no navegador e conversa com a
+    # API do GitHub — o GitHub Pages não executa código, então não há outro jeito
+    # de ter um painel "dentro do site". Fora do sitemap e barrado no robots: é
+    # ferramenta de trabalho, não conteúdo. Sem token não faz nada.
+    painel = TEMA / "admin.html"
+    if painel.exists():
+        escrever("admin/index.html", painel.read_text(encoding="utf-8"))
+
     escrever("sitemap.xml", monta_sitemap(cfg, urls))
     escrever("robots.txt",
-             f"User-agent: *\nAllow: /\n\nSitemap: {cfg['url']}/sitemap.xml\n")
+             f"User-agent: *\nAllow: /\nDisallow: /admin/\n\n"
+             f"Sitemap: {cfg['url']}/sitemap.xml\n")
     escrever("feed.xml", monta_feed(cfg, textos))
 
     css = TEMA / "estilo.css"

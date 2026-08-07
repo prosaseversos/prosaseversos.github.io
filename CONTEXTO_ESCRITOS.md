@@ -37,6 +37,47 @@ Não tem servidor, não tem banco, não tem processo rodando. Nada para reinicia
 nada para cair. É a diferença deliberada em relação ao Flamma e ao ADM_PRO:
 este projeto **não** disputa manutenção com os sistemas de produção.
 
+## O painel — escrever pelo navegador
+
+**https://prosaseversos.github.io/admin/** — de qualquer lugar, inclusive do celular.
+
+Editor com prévia ao lado, lista dos textos, importação de `.docx` e botão de
+publicar. Cmd/Ctrl+S publica.
+
+### Por que não é um Flask com login, como o do Flamma
+
+O GitHub Pages **não executa código** — só entrega arquivos. Não há onde rodar um
+servidor. Então o painel é uma página que roda **no navegador** e conversa direto
+com a API do GitHub: cada "Publicar" é um commit, o commit dispara o Actions, o
+Actions republica. Sem banco e sem cópia intermediária — a fonte é o repositório.
+
+Consequência: não há sessão com senha. O acesso é um **token do GitHub** que fica
+no `localStorage` do aparelho. Peça o token com o mínimo: *Only select
+repositories* → este repositório, e *Contents: Read and write* (mais *Actions:
+Read-only* para ver o andamento). Assim, se vazar, o alcance é um repositório de
+poesia que já é público — e revoga-se na mesma página onde foi criado.
+
+O painel é público (não dá para esconder arquivo em site estático), mas **sem
+token não faz nada**: a API do GitHub recusa. Está fora do sitemap, com
+`Disallow: /admin/` no robots e `noindex` na página.
+
+### O que ele faz e o que não faz
+
+- **`.docx` é lido no próprio navegador.** Um .docx é ZIP + XML, e o navegador
+  sabe descompactar (`DecompressionStream`) e ler XML (`DOMParser`). O `<w:br/>`
+  do Shift+Enter vira quebra de verso, como no importador do Mac.
+- **PDF não dá pelo navegador** — extrair texto de PDF exige interpretar fontes e
+  streams. Para PDF, use o `importar.command` no Mac.
+- **Renomear texto publicado**: o painel avisa que o endereço vai mudar e apaga o
+  arquivo antigo, para o texto não ficar no site em dois endereços (o Google
+  trataria como conteúdo duplicado).
+- **A prévia espelha o `render()` do `gerar.py`.** Se um dia divergirem, o site é
+  a verdade — mexeu na regra de um, mexa no outro.
+
+⚠️ **`SECOES` no `admin.html` precisa espelhar `secoes` do `site.json`.** Se
+divergirem, o texto vai para uma pasta que o gerador não conhece e some do site
+sem dar erro nenhum.
+
 ## Importar do Word, do PDF, do que já está escrito
 
 Arraste os arquivos para a subpasta da seção e dê duplo clique em

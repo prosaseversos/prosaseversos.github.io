@@ -1,0 +1,695 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel — Prosas e Versos</title>
+
+<!-- Fora da busca. O painel é público (não há como esconder arquivo em site
+     estático), mas não há por que ele aparecer no Google. Quem abrir sem token
+     não consegue fazer nada: a API do GitHub recusa. -->
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+
+<style>
+/* ============================================================================
+   Painel de escrita — roda inteiro no navegador, sem servidor.
+
+   O site é estático (GitHub Pages não executa código), então este arquivo fala
+   direto com a API do GitHub: lê os textos, grava os textos, e o GitHub Actions
+   republica o site sozinho. Não há cópia intermediária para divergir.
+
+   Sem framework e sem CDN, pelo mesmo motivo do resto do projeto: uma página
+   que precisa funcionar daqui a dez anos não pode depender de um script que
+   alguém hospeda de graça hoje.
+   ========================================================================= */
+:root {
+  --papel:#f6f8fa; --tinta:#16202c; --suave:#5c6b7d; --linha:#dde4ec;
+  --acento:#1f5c9e; --realce:#eaf0f7; --erro:#a4262c; --ok:#1a7f4b;
+  --serif:'Iowan Old Style',Palatino,Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme:dark){:root{
+  --papel:#0f151d; --tinta:#d5dde6; --suave:#7f8d9e; --linha:#212c39;
+  --acento:#7fb2e8; --realce:#161e28; --erro:#e08b90; --ok:#6cc196;
+}}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--papel);color:var(--tinta);font-family:var(--sans);
+  font-size:15px;line-height:1.55;-webkit-text-size-adjust:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--acento)}
+:focus-visible{outline:2px solid var(--acento);outline-offset:2px;border-radius:3px}
+
+.topo{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;
+  padding:.85rem 1.1rem;border-bottom:1px solid var(--linha);background:var(--realce)}
+.topo h1{margin:0;font-size:.82rem;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--suave)}
+.topo .dir{margin-left:auto;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+.marca{width:22px;height:22px;color:var(--acento);flex:none}
+
+button{background:none;border:1px solid var(--linha);border-radius:7px;
+  padding:.42rem .85rem;cursor:pointer;font-size:.84rem;
+  transition:border-color .15s,background .15s}
+button:hover:not(:disabled){border-color:var(--acento);color:var(--acento)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.principal{background:var(--acento);border-color:var(--acento);color:#fff;font-weight:600}
+button.principal:hover:not(:disabled){opacity:.9;color:#fff}
+button.perigo:hover:not(:disabled){border-color:var(--erro);color:var(--erro)}
+
+.corpo{display:grid;grid-template-columns:230px 1fr;min-height:calc(100vh - 53px)}
+@media (max-width:820px){.corpo{grid-template-columns:1fr}
+  .lado{border-right:0;border-bottom:1px solid var(--linha);max-height:38vh}}
+
+.lado{border-right:1px solid var(--linha);overflow-y:auto;padding:.9rem}
+.lado h2{margin:1rem 0 .4rem;font-size:.66rem;font-weight:600;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--suave)}
+.lado h2:first-child{margin-top:0}
+.item{display:block;width:100%;text-align:left;border:0;border-radius:6px;
+  padding:.42rem .55rem;font-size:.87rem;line-height:1.3;cursor:pointer;
+  color:inherit;background:none}
+.item:hover{background:var(--realce);color:inherit}
+.item[aria-current="true"]{background:var(--acento);color:#fff;font-weight:600}
+.item small{display:block;font-size:.7rem;opacity:.65;margin-top:.1rem}
+.vazio{font-size:.8rem;color:var(--suave);font-style:italic;padding:.3rem .55rem}
+
+.centro{display:flex;flex-direction:column;min-width:0}
+.campos{display:flex;gap:.6rem;flex-wrap:wrap;padding:.9rem 1.1rem;
+  border-bottom:1px solid var(--linha)}
+.campo{display:flex;flex-direction:column;gap:.22rem;flex:1;min-width:135px}
+.campo label{font-size:.66rem;font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--suave)}
+input,select{background:var(--papel);border:1px solid var(--linha);border-radius:6px;
+  padding:.4rem .55rem;font-size:.88rem;width:100%}
+.campo.largo{flex:2.2 1 250px}
+
+.editor{display:grid;grid-template-columns:1fr 1fr;flex:1;min-height:0}
+@media (max-width:820px){.editor{grid-template-columns:1fr}
+  .previa{border-top:1px solid var(--linha);max-height:45vh}}
+textarea{width:100%;height:100%;min-height:340px;border:0;resize:none;padding:1.3rem;
+  background:var(--papel);font-family:var(--mono);font-size:13.5px;line-height:1.75;
+  tab-size:4}
+textarea:focus{outline:0}
+.previa{border-left:1px solid var(--linha);overflow-y:auto;padding:1.6rem 1.8rem;
+  font-family:var(--serif);font-size:17px;line-height:1.75}
+@media (max-width:820px){.previa{border-left:0}}
+.previa h1{font-size:1.5em;font-weight:400;line-height:1.2;margin:0 0 .15em;text-wrap:balance}
+.previa .data{font-family:var(--sans);font-size:.62em;letter-spacing:.06em;
+  color:var(--suave);margin-bottom:2em;display:block}
+.previa .estrofe{margin:0 0 1.9em;line-height:1.9;white-space:normal}
+.previa .refrao{font-style:italic;border-left:2px solid var(--acento);
+  padding-left:1.1rem;margin-left:-1.1rem}
+.previa .rotulo{display:block;font-family:var(--sans);font-style:normal;font-size:.6em;
+  font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--suave);
+  margin-bottom:.5em}
+.previa p{margin:0 0 1.35em;text-wrap:pretty}
+.previa blockquote{margin:1.6em 0;padding-left:1.2rem;border-left:2px solid var(--linha);
+  color:var(--suave);font-style:italic}
+.previa hr{border:0;border-top:1px solid var(--linha);width:4.5rem;margin:2.4rem auto}
+.previa h2,.previa h3{font-size:1.08em;font-weight:600;margin:1.8em 0 .5em}
+
+.recado{padding:.6rem 1.1rem;font-size:.83rem;border-bottom:1px solid var(--linha);
+  display:none;align-items:center;gap:.5rem}
+.recado.ver{display:flex}
+.recado.erro{color:var(--erro);background:color-mix(in srgb,var(--erro) 9%,transparent)}
+.recado.ok{color:var(--ok);background:color-mix(in srgb,var(--ok) 9%,transparent)}
+.recado.info{color:var(--suave);background:var(--realce)}
+
+.porta{max-width:33rem;margin:12vh auto;padding:0 1.4rem}
+.porta h2{font-family:var(--serif);font-weight:400;font-size:1.7rem;margin:0 0 .4rem}
+.porta p{color:var(--suave);font-size:.9rem}
+.porta ol{color:var(--suave);font-size:.86rem;line-height:1.85;padding-left:1.2rem}
+.porta code{font-family:var(--mono);font-size:.83em;background:var(--realce);
+  padding:.1rem .35rem;border-radius:4px}
+.porta .linha{display:flex;gap:.5rem;margin:1.1rem 0 .5rem}
+.aviso{font-size:.8rem;color:var(--suave);border-left:2px solid var(--linha);
+  padding-left:.9rem;margin-top:1.6rem}
+.oculto{display:none !important}
+.contagem{font-size:.74rem;color:var(--suave);padding:.35rem 1.1rem;
+  border-top:1px solid var(--linha)}
+</style>
+</head>
+<body>
+
+<!-- ══ Porta de entrada: sem token, nada acontece ══ -->
+<div id="porta" class="porta">
+  <h2>Painel de escrita</h2>
+  <p>Para escrever aqui, o navegador precisa de um token do GitHub. Ele fica
+     guardado só neste aparelho e nunca sai daqui.</p>
+  <ol>
+    <li>Abra <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">
+        github.com/settings/personal-access-tokens/new</a> (logado como <code>prosaseversos</code>)</li>
+    <li><b>Repository access</b> → <i>Only select repositories</i> →
+        <code>prosaseversos.github.io</code></li>
+    <li><b>Permissions</b> → <i>Repository permissions</i> → <b>Contents: Read and write</b>
+        (e, se quiser ver o andamento da publicação, <b>Actions: Read-only</b>)</li>
+    <li>Escolha a validade, gere e cole abaixo</li>
+  </ol>
+  <div class="linha">
+    <input id="token" type="password" placeholder="github_pat_..." autocomplete="off">
+    <button class="principal" id="entrar">Entrar</button>
+  </div>
+  <div id="recadoPorta" class="recado"></div>
+  <p class="aviso">Peça o acesso mínimo: só este repositório, só Contents. Assim,
+    se o token vazar, o alcance dele é um repositório de poesia que já é público —
+    e você pode revogá-lo a qualquer momento na mesma página onde o criou.</p>
+</div>
+
+<!-- ══ Painel ══ -->
+<div id="painel" class="oculto">
+  <header class="topo">
+    <svg class="marca" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true">
+      <rect x="3" y="8.5" width="11" height="2.6" rx="1.3"/>
+      <rect x="3" y="14.7" width="11" height="2.6" rx="1.3"/>
+      <rect x="3" y="20.9" width="11" height="2.6" rx="1.3"/>
+      <rect x="18" y="8.5" width="11" height="2.6" rx="1.3"/>
+      <rect x="18" y="14.7" width="6" height="2.6" rx="1.3"/>
+      <rect x="18" y="20.9" width="9" height="2.6" rx="1.3"/>
+    </svg>
+    <h1>Prosas e Versos</h1>
+    <div class="dir">
+      <button id="novo">+ Novo</button>
+      <button id="abrirArquivo">Importar Word</button>
+      <input id="arquivo" type="file" accept=".docx,.txt,.md" class="oculto">
+      <button id="publicar" class="principal">Publicar</button>
+      <button id="sair" class="perigo" title="Esquecer o token neste aparelho">Sair</button>
+    </div>
+  </header>
+
+  <div id="recado" class="recado"></div>
+
+  <div class="corpo">
+    <nav class="lado" id="lista"></nav>
+
+    <div class="centro">
+      <div class="campos">
+        <div class="campo largo">
+          <label for="titulo">Título</label>
+          <input id="titulo" placeholder="Sem título">
+        </div>
+        <div class="campo">
+          <label for="secao">Seção</label>
+          <select id="secao"></select>
+        </div>
+        <div class="campo">
+          <label for="data">Data</label>
+          <input id="data" type="date">
+        </div>
+      </div>
+      <div class="editor">
+        <textarea id="texto" spellcheck="true"
+          placeholder="Escreva aqui.
+
+Em poesia e composições, cada quebra de linha é um verso e a linha em branco separa a estrofe.
+Em textos e artigos, as linhas se juntam em parágrafo.
+
+Numa composição, [Refrão] marca o refrão."></textarea>
+        <div class="previa" id="previa"></div>
+      </div>
+      <div class="contagem" id="contagem"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ═══════════════════════════════════════════════════════════════════════════
+   O painel conversa com a API do GitHub. Cada "Publicar" é um commit; o commit
+   dispara o GitHub Actions; o Actions roda `gerar.py` e o site sai atualizado.
+   Não existe banco nem cópia intermediária — a fonte é o repositório.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const DONO = "prosaseversos";
+const REPO = "prosaseversos.github.io";
+const API  = `https://api.github.com/repos/${DONO}/${REPO}`;
+const SITE = `https://${DONO}.github.io`;
+
+// Precisa espelhar `secoes` do site.json. Divergiu? o texto vai para uma pasta
+// que o gerador não conhece e some do site sem dar erro.
+const SECOES = [
+  {pasta:"poesia",      titulo:"Poesia",      verso:true},
+  {pasta:"composicoes", titulo:"Composições", verso:true},
+  {pasta:"textos",      titulo:"Textos",      verso:false},
+  {pasta:"artigos",     titulo:"Artigos",     verso:false},
+];
+
+let token = localStorage.getItem("pv_token") || "";
+let atual = null;      // {caminho, sha} do texto aberto; null = texto novo
+let indice = [];       // o que existe hoje no repositório
+let sujo = false;      // há mudança não publicada?
+
+const $ = s => document.querySelector(s);
+
+/* ── Conversa com o GitHub ────────────────────────────────────────────────── */
+async function api(caminho, opcoes = {}) {
+  const r = await fetch(caminho.startsWith("http") ? caminho : API + caminho, {
+    ...opcoes,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      ...(opcoes.headers || {}),
+    },
+  });
+  if (r.status === 401) throw new Error("Token recusado. Pode ter vencido — gere outro.");
+  if (r.status === 403) throw new Error("Sem permissão. O token precisa de Contents: Read and write.");
+  if (r.status === 404 && opcoes.method !== "PUT") return null;
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).message || `Erro ${r.status}`);
+  return r.status === 204 ? null : r.json();
+}
+
+/* base64 ⇄ texto, passando por UTF-8.
+   ⚠️ `btoa` só aceita bytes 0-255. Sem o TextEncoder, um "ção" quebra o commit. */
+const paraB64 = txt => {
+  const bytes = new TextEncoder().encode(txt);
+  let s = ""; bytes.forEach(b => s += String.fromCharCode(b));
+  return btoa(s);
+};
+const deB64 = b64 => {
+  const bin = atob(b64.replace(/\s/g, ""));
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  return new TextDecoder("utf-8").decode(bytes);
+};
+
+/* ── Recados ──────────────────────────────────────────────────────────────── */
+function recado(msg, tipo = "info", onde = "#recado") {
+  const el = $(onde);
+  el.textContent = msg;
+  el.className = "recado ver " + tipo;
+  if (tipo === "ok") setTimeout(() => { el.className = "recado"; }, 6000);
+}
+const limparRecado = (onde = "#recado") => { $(onde).className = "recado"; };
+
+/* ── Frontmatter ──────────────────────────────────────────────────────────── */
+function lerArquivo(txt) {
+  const meta = {}; let corpo = txt;
+  if (txt.startsWith("---")) {
+    const p = txt.split("---");
+    if (p.length >= 3) {
+      p[1].trim().split("\n").forEach(l => {
+        const i = l.indexOf(":");
+        if (i > 0) meta[l.slice(0, i).trim().toLowerCase()] = l.slice(i + 1).trim();
+      });
+      corpo = p.slice(2).join("---");
+    }
+  }
+  return {meta, corpo: corpo.replace(/^\n+/, "")};
+}
+
+// ̀-ͯ é a faixa dos acentos que o NFKD separa da letra. Escrito por
+// código, e não como caractere solto, para não depender do encoding do arquivo.
+const semAcento = s => s.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
+const slug = s => (semAcento(s).replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "")
+                   .toLowerCase() || "sem-titulo");
+
+function montarArquivo() {
+  const t = $("#titulo").value.trim() || "Sem título";
+  const d = $("#data").value || new Date().toISOString().slice(0, 10);
+  const corpo = $("#texto").value.trim();
+  const resumo = corpo.replace(/[#>*_`]/g, "").replace(/\s+/g, " ").trim().slice(0, 150);
+  return `---\ntitulo: ${t}\ndata: ${d}\nresumo: ${resumo}\n---\n\n${corpo}\n`;
+}
+
+/* ── Prévia ───────────────────────────────────────────────────────────────────
+   Espelha o `render()` do gerar.py. Se um dia divergirem, o site é a verdade —
+   esta prévia serve para escrever, não para conferir o resultado final. */
+const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+function inline(t) {
+  return esc(t)
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, "<em>$1</em>");
+}
+const recuo = l => {
+  const c = l.replace(/^ +/, "");
+  return "&nbsp;".repeat(l.length - c.length) + inline(c);
+};
+
+function render(corpo, verso) {
+  const saida = [];
+  for (const bloco of corpo.trim().split(/\n\s*\n/)) {
+    let linhas = bloco.split("\n").map(l => l.replace(/\s+$/, "")).filter(l => l.trim());
+    if (!linhas.length) continue;
+
+    let rotulo = null;
+    const m = linhas[0].trim().match(/^\[(.{1,40})\]$/);
+    if (m && linhas.length > 1) { rotulo = m[1].trim(); linhas = linhas.slice(1); }
+
+    if (rotulo !== null) {
+      const cls = /refr/i.test(semAcento(rotulo)) ? "estrofe refrao" : "estrofe";
+      saida.push(`<p class="${cls}"><span class="rotulo">${inline(rotulo)}</span>`
+                 + linhas.map(recuo).join("<br>\n") + "</p>");
+    } else if (linhas.every(l => /^[-*_]{3,}$/.test(l.trim()))) {
+      saida.push("<hr>");
+    } else if (linhas[0].startsWith("#")) {
+      const n = Math.min(linhas[0].length - linhas[0].replace(/^#+/, "").length, 4) + 1;
+      saida.push(`<h${n}>${inline(linhas[0].replace(/^#+\s*/, ""))}</h${n}>`);
+      const resto = linhas.slice(1).join("\n");
+      if (resto.trim()) saida.push(render(resto, verso));
+    } else if (linhas[0].startsWith(">")) {
+      const d = linhas.map(l => l.replace(/^>\s?/, ""));
+      saida.push("<blockquote><p>" + d.map(inline).join(verso ? "<br>\n" : " ") + "</p></blockquote>");
+    } else if (verso) {
+      saida.push('<p class="estrofe">' + linhas.map(recuo).join("<br>\n") + "</p>");
+    } else {
+      saida.push("<p>" + linhas.map(inline).join(" ") + "</p>");
+    }
+  }
+  return saida.join("\n");
+}
+
+const MESES = ["","janeiro","fevereiro","março","abril","maio","junho","julho",
+               "agosto","setembro","outubro","novembro","dezembro"];
+
+function atualizarPrevia() {
+  const secao = SECOES.find(s => s.pasta === $("#secao").value);
+  const corpo = $("#texto").value;
+  const [a, m, d] = ($("#data").value || "").split("-");
+  const data = a ? `${+d} de ${MESES[+m]} de ${a}` : "";
+  $("#previa").innerHTML =
+    `<h1>${esc($("#titulo").value || "Sem título")}</h1>`
+    + `<span class="data">${data}</span>`
+    + render(corpo, secao.verso);
+
+  const linhas = corpo.split("\n").filter(l => l.trim()).length;
+  const palavras = corpo.trim() ? corpo.trim().split(/\s+/).length : 0;
+  $("#contagem").textContent =
+    `${linhas} linha(s) · ${palavras} palavra(s)` + (sujo ? " · não publicado" : "");
+}
+
+/* ── Índice ───────────────────────────────────────────────────────────────── */
+async function carregarIndice() {
+  indice = [];
+  for (const s of SECOES) {
+    const itens = await api(`/contents/conteudo/${s.pasta}`);
+    (itens || []).filter(i => i.type === "file" && i.name.endsWith(".md")
+                              && !i.name.startsWith("."))
+      .forEach(i => indice.push({...i, secao: s}));
+  }
+  indice.sort((a, b) => b.name.localeCompare(a.name));
+  desenharLista();
+}
+
+function desenharLista() {
+  const lista = $("#lista");
+  lista.innerHTML = "";
+  for (const s of SECOES) {
+    const dela = indice.filter(i => i.secao.pasta === s.pasta);
+    const h = document.createElement("h2");
+    h.textContent = `${s.titulo} (${dela.length})`;
+    lista.appendChild(h);
+    if (!dela.length) {
+      const v = document.createElement("p");
+      v.className = "vazio"; v.textContent = "nada aqui ainda";
+      lista.appendChild(v);
+      continue;
+    }
+    for (const it of dela) {
+      const b = document.createElement("button");
+      b.className = "item";
+      b.setAttribute("aria-current", atual && atual.caminho === it.path ? "true" : "false");
+      const data = (it.name.match(/^(\d{4}-\d{2}-\d{2})/) || [])[1] || "";
+      b.innerHTML = `${esc(it.name.replace(/^\d{4}-\d{2}-\d{2}-/, "").replace(/\.md$/, "")
+                       .replace(/-/g, " "))}<small>${data}</small>`;
+      b.onclick = () => abrir(it);
+      lista.appendChild(b);
+    }
+  }
+}
+
+async function abrir(item) {
+  if (!confirmarPerda()) return;
+  try {
+    recado("Abrindo…");
+    const arq = await api(`/contents/${item.path}`);
+    const {meta, corpo} = lerArquivo(deB64(arq.content));
+    atual = {caminho: item.path, sha: arq.sha};
+    $("#titulo").value = meta.titulo || "";
+    $("#data").value = (meta.data || "").slice(0, 10);
+    $("#secao").value = item.secao.pasta;
+    $("#texto").value = corpo.trim();
+    sujo = false;
+    limparRecado();
+    desenharLista();
+    atualizarPrevia();
+  } catch (e) { recado(e.message, "erro"); }
+}
+
+function novo() {
+  if (!confirmarPerda()) return;
+  atual = null;
+  $("#titulo").value = "";
+  $("#data").value = new Date().toISOString().slice(0, 10);
+  $("#texto").value = "";
+  sujo = false;
+  limparRecado();
+  desenharLista();
+  atualizarPrevia();
+  $("#titulo").focus();
+}
+
+const confirmarPerda = () =>
+  !sujo || confirm("Há mudança não publicada neste texto. Descartar?");
+
+/* ── Publicar ─────────────────────────────────────────────────────────────── */
+async function publicar() {
+  const titulo = $("#titulo").value.trim();
+  if (!titulo) { recado("Falta o título.", "erro"); $("#titulo").focus(); return; }
+  if (!$("#texto").value.trim()) { recado("O texto está vazio.", "erro"); return; }
+
+  const secao = $("#secao").value;
+  const data = $("#data").value || new Date().toISOString().slice(0, 10);
+  const novoCaminho = `conteudo/${secao}/${data}-${slug(titulo)}.md`;
+
+  // Trocar o título de um texto já publicado muda o nome do arquivo, e o
+  // endereço vai junto — quem compartilhou o link fica com link quebrado.
+  const mudouCaminho = atual && atual.caminho !== novoCaminho;
+  if (mudouCaminho &&
+      !confirm(`O endereço deste texto vai mudar:\n\n${atual.caminho}\n→ ${novoCaminho}\n\n`
+               + "Quem já tiver o link antigo cai numa página que não existe. Seguir?"))
+    return;
+
+  $("#publicar").disabled = true;
+  try {
+    recado("Publicando…");
+    await api(`/contents/${novoCaminho}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        message: `${atual ? "Reescrito" : "Novo"}: ${titulo}`,
+        content: paraB64(montarArquivo()),
+        ...(atual && !mudouCaminho ? {sha: atual.sha} : {}),
+      }),
+    });
+
+    // Renomeou? o arquivo antigo tem de sair, senão o texto fica no site duas vezes
+    // em dois endereços — e o Google trata isso como conteúdo duplicado.
+    if (mudouCaminho) {
+      await api(`/contents/${atual.caminho}`, {
+        method: "DELETE",
+        body: JSON.stringify({message: `Renomeado: ${titulo}`, sha: atual.sha}),
+      });
+    }
+
+    recado("Publicado. O site se refaz em cerca de 1 minuto.", "ok");
+    sujo = false;
+    atual = null;
+    await carregarIndice();
+    const item = indice.find(i => i.path === novoCaminho);
+    if (item) await abrir(item);
+    acompanharPublicacao();
+  } catch (e) {
+    recado("Não publicou: " + e.message, "erro");
+  } finally {
+    $("#publicar").disabled = false;
+  }
+}
+
+/* O commit só grava o arquivo. Quem monta o site é o GitHub Actions, e é ele que
+   pode falhar — então o painel espera a resposta em vez de dar por publicado. */
+async function acompanharPublicacao() {
+  for (let i = 0; i < 40; i++) {
+    await new Promise(r => setTimeout(r, 6000));
+    let dados;
+    try { dados = await api("/actions/runs?per_page=1"); }
+    catch { return; }                       // sem permissão de Actions: silêncio
+    const run = dados && dados.workflow_runs && dados.workflow_runs[0];
+    if (!run) return;
+    if (run.status === "completed") {
+      if (run.conclusion === "success")
+        recado(`No ar em ${SITE} — pode conferir.`, "ok");
+      else
+        recado("O texto foi salvo, mas a publicação do site falhou. "
+               + "Veja o motivo em github.com/" + DONO + "/" + REPO + "/actions", "erro");
+      return;
+    }
+  }
+}
+
+/* ── Importar .docx no próprio navegador ──────────────────────────────────────
+   Um .docx é um ZIP com XML dentro. O navegador sabe descompactar (
+   DecompressionStream) e sabe ler XML (DOMParser) — então dá para importar aqui
+   mesmo, sem servidor e sem biblioteca.
+
+   Como no importador do Mac, o que importa é o <w:br/>: no Word o verso quebrado
+   com Shift+Enter é uma quebra DENTRO do parágrafo, e quem a descarta entrega a
+   estrofe numa linha só.
+
+   PDF não dá: extrair texto de PDF exige interpretar fontes e streams, coisa que
+   não cabe aqui. Para PDF, use o importar.command no Mac. */
+async function lerDocx(arquivo) {
+  const buf = new Uint8Array(await arquivo.arrayBuffer());
+  const dv = new DataView(buf.buffer);
+
+  // Fim do diretório central (assinatura PK\5\6), procurado de trás para frente.
+  let fim = -1;
+  for (let i = buf.length - 22; i >= 0 && i > buf.length - 65558; i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { fim = i; break; }
+  }
+  if (fim < 0) throw new Error("não parece um .docx");
+
+  let pos = dv.getUint32(fim + 16, true);
+  const total = dv.getUint16(fim + 10, true);
+  let achado = null;
+  const dec = new TextDecoder();
+
+  for (let n = 0; n < total; n++) {
+    if (dv.getUint32(pos, true) !== 0x02014b50) break;
+    const metodo = dv.getUint16(pos + 10, true);
+    const compr  = dv.getUint32(pos + 20, true);
+    const tamNome = dv.getUint16(pos + 28, true);
+    const tamExtra = dv.getUint16(pos + 30, true);
+    const tamCom = dv.getUint16(pos + 32, true);
+    const desloc = dv.getUint32(pos + 42, true);
+    const nome = dec.decode(buf.subarray(pos + 46, pos + 46 + tamNome));
+    if (nome === "word/document.xml") { achado = {metodo, compr, desloc}; break; }
+    pos += 46 + tamNome + tamExtra + tamCom;
+  }
+  if (!achado) throw new Error("não achei o texto dentro do arquivo");
+
+  // O cabeçalho local repete os tamanhos variáveis; só ele diz onde o dado começa.
+  const L = achado.desloc;
+  const inicio = L + 30 + dv.getUint16(L + 26, true) + dv.getUint16(L + 28, true);
+  const dados = buf.subarray(inicio, inicio + achado.compr);
+
+  let xml;
+  if (achado.metodo === 0) {
+    xml = dec.decode(dados);
+  } else {
+    const fluxo = new Blob([dados]).stream()
+      .pipeThrough(new DecompressionStream("deflate-raw"));
+    xml = dec.decode(new Uint8Array(await new Response(fluxo).arrayBuffer()));
+  }
+
+  const doc = new DOMParser().parseFromString(xml, "application/xml");
+  const W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+  const linhas = [];
+  for (const p of doc.getElementsByTagNameNS(W, "p")) {
+    let linha = "";
+    const anda = no => {
+      for (const f of no.childNodes) {
+        if (f.nodeType !== 1) continue;
+        if (f.namespaceURI === W && f.localName === "t") linha += f.textContent || "";
+        else if (f.namespaceURI === W && (f.localName === "br" || f.localName === "cr")) linha += "\n";
+        else if (f.namespaceURI === W && f.localName === "tab") linha += "    ";
+        else anda(f);
+      }
+    };
+    anda(p);
+    linhas.push(linha);
+  }
+  return linhas.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+async function importar(arquivo) {
+  try {
+    recado(`Lendo ${arquivo.name}…`);
+    let texto;
+    if (arquivo.name.toLowerCase().endsWith(".docx")) texto = await lerDocx(arquivo);
+    else texto = (await arquivo.text()).replace(/\r\n?/g, "\n").trim();
+    if (!texto) throw new Error("o arquivo abriu, mas não havia texto dentro");
+
+    if (!confirmarPerda()) return;
+    atual = null;
+
+    // Primeira linha curta, sem pontuação de fim e seguida de linha vazia: título.
+    const linhas = texto.split("\n");
+    const cabeca = (linhas[0] || "").trim();
+    if (cabeca && cabeca.length <= 70 && !/[.,;:]$/.test(cabeca)
+        && (linhas[1] === undefined || !linhas[1].trim())) {
+      $("#titulo").value = cabeca;
+      texto = linhas.slice(1).join("\n").trim();
+    } else {
+      $("#titulo").value = arquivo.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ");
+    }
+
+    // Data do arquivo, quando o navegador a fornece — é palpite, e o recado diz isso.
+    const quando = arquivo.lastModified ? new Date(arquivo.lastModified) : new Date();
+    $("#data").value = quando.toISOString().slice(0, 10);
+    $("#texto").value = texto;
+    sujo = true;
+    atualizarPrevia();
+    desenharLista();
+    recado("Importado. Confira a DATA (veio do arquivo) e a seção antes de publicar.", "info");
+  } catch (e) {
+    recado("Não consegui ler: " + e.message, "erro");
+  }
+}
+
+/* ── Entrada ──────────────────────────────────────────────────────────────── */
+async function entrar(t) {
+  token = t;
+  try {
+    const repo = await api("");
+    if (!repo) throw new Error("não achei o repositório com este token");
+    localStorage.setItem("pv_token", token);
+    $("#porta").classList.add("oculto");
+    $("#painel").classList.remove("oculto");
+    await carregarIndice();
+    novo();
+  } catch (e) {
+    token = "";
+    localStorage.removeItem("pv_token");
+    recado(e.message, "erro", "#recadoPorta");
+  }
+}
+
+/* ── Ligações ─────────────────────────────────────────────────────────────── */
+SECOES.forEach(s => {
+  const o = document.createElement("option");
+  o.value = s.pasta; o.textContent = s.titulo;
+  $("#secao").appendChild(o);
+});
+
+$("#entrar").onclick = () => {
+  const t = $("#token").value.trim();
+  if (t) entrar(t); else recado("Cole o token.", "erro", "#recadoPorta");
+};
+$("#token").onkeydown = e => { if (e.key === "Enter") $("#entrar").click(); };
+
+$("#novo").onclick = novo;
+$("#publicar").onclick = publicar;
+$("#abrirArquivo").onclick = () => $("#arquivo").click();
+$("#arquivo").onchange = e => { if (e.target.files[0]) importar(e.target.files[0]); e.target.value = ""; };
+$("#sair").onclick = () => {
+  if (!confirmarPerda()) return;
+  localStorage.removeItem("pv_token");
+  location.reload();
+};
+
+["#titulo", "#data", "#secao", "#texto"].forEach(sel => {
+  $(sel).addEventListener("input", () => { sujo = true; atualizarPrevia(); });
+});
+
+// Cmd/Ctrl+S publica — o reflexo de quem escreve.
+document.addEventListener("keydown", e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === "s") { e.preventDefault(); publicar(); }
+});
+
+// Fechar a aba com texto não publicado perde o texto: o navegador avisa.
+window.addEventListener("beforeunload", e => { if (sujo) { e.preventDefault(); e.returnValue = ""; } });
+
+if (token) entrar(token); else $("#token").focus();
+</script>
+</body>
+</html>
