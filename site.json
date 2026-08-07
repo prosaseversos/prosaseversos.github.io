@@ -1,0 +1,21 @@
+{
+  "nome": "Tinta Lenta",
+  "subtitulo": "poesia, composições, textos e artigos",
+  "autor": "Tinta Lenta",
+  "descricao": "Poesia, composições, textos e artigos. Escrita sem pressa.",
+
+  "_url": "⚠️ Precisa bater com o nome do repositório no GitHub. Se o repositório se chamar boschettiandre.github.io, a URL é esta. Se for outro nome, vira https://boschettiandre.github.io/nome-do-repo. Errar aqui aponta canonical, sitemap e Open Graph para endereço que não existe.",
+  "url": "https://boschettiandre.github.io",
+
+  "idioma": "pt-BR",
+  "email": "",
+  "redes": [],
+
+  "_secoes": "`verso: true` preserva quebra de linha e recuo (poema, letra). `verso: false` junta linhas em parágrafo (prosa). A ordem aqui é a ordem do menu.",
+  "secoes": [
+    { "pasta": "poesia",      "titulo": "Poesia",      "verso": true,  "descricao": "Poemas." },
+    { "pasta": "composicoes", "titulo": "Composições", "verso": true,  "descricao": "Letras e canções." },
+    { "pasta": "textos",      "titulo": "Textos",      "verso": false, "descricao": "Crônicas e escritos." },
+    { "pasta": "artigos",     "titulo": "Artigos",     "verso": false, "descricao": "Artigos e ensaios." }
+  ]
+}

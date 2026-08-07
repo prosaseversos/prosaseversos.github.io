@@ -1,0 +1,378 @@
+/* ============================================================================
+   Escritos — folha de estilo única.
+
+   Regra que orienta tudo aqui: a página existe para o texto ser lido. Nada
+   pisca, nada segue o rolar, nada disputa atenção com a primeira linha.
+
+   Três leituras diferentes, três tratamentos:
+     .verso   poema e letra — quebra de linha é forma; medida estreita, sem justificar
+     .prosa   texto corrido — medida de ~65 caracteres, entrelinha de livro
+     .refrao  o refrão da composição — volta sempre, então se distingue à vista
+
+   Fontes: só as do sistema. Fonte de CDN custa uma requisição a servidor de
+   terceiro, atrasa a primeira linha e cria dependência externa num site que
+   precisa durar. As serifadas do macOS/iOS são excelentes para leitura.
+   ========================================================================= */
+
+/* ── PALETA ────────────────────────────────────────────────────────────────
+   Duas prontas: AZUL (ativa) e VERMELHA (comentada, mais abaixo). Para trocar,
+   comente um bloco e descomente o outro — são os mesmos seis nomes de cor.
+
+   Nenhuma das duas usa preto puro nem branco puro. Preto sobre branco no máximo
+   contraste vibra e cansa em leitura longa; o texto aqui é tinta escura sobre
+   papel, como num livro.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* AZUL — sóbria, fria, boa para texto longo. */
+:root {
+  --papel:    #f6f8fa;   /* papel levemente azulado, não o branco de planilha */
+  --tinta:    #16202c;   /* azul-tinta bem escuro, no lugar do preto */
+  --suave:    #5c6b7d;   /* datas, legendas, o que informa sem interromper */
+  --linha:    #dde4ec;
+  --acento:   #1f5c9e;   /* azul de caneta, só em link e detalhe */
+  --realce:   #eaf0f7;
+
+  --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua',
+           Georgia, 'Times New Roman', serif;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Roboto,
+          'Helvetica Neue', Arial, sans-serif;
+
+  --medida-prosa: 34rem;   /* ~65 caracteres: onde o olho lê sem se perder na volta */
+  --medida-verso: 30rem;
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --papel:  #0f151d;
+    --tinta:  #d5dde6;
+    --suave:  #7f8d9e;
+    --linha:  #212c39;
+    --acento: #7fb2e8;   /* no escuro o azul precisa clarear, ou o link some */
+    --realce: #161e28;
+  }
+}
+
+/* VERMELHA — quente, mais presente. Para usá-la: apague a barra dos dois blocos
+   abaixo e comente os dois blocos azuis acima.
+
+:root {
+  --papel:    #faf7f5;
+  --tinta:    #241b19;
+  --suave:    #7a6660;
+  --linha:    #e9dedb;
+  --acento:   #9b2226;
+  --realce:   #f5ebe8;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --papel:  #171213;
+    --tinta:  #e2d8d5;
+    --suave:  #9b8781;
+    --linha:  #302526;
+    --acento: #e0898b;
+    --realce: #201819;
+  }
+}
+*/
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--papel);
+  color: var(--tinta);
+  font-family: var(--serif);
+  /* Corpo fluido: 18px no celular, até 20px no desktop. Texto longo em fonte
+     pequena é o motivo nº 1 de alguém fechar a aba antes da segunda estrofe. */
+  font-size: clamp(1.075rem, 1rem + 0.35vw, 1.25rem);
+  line-height: 1.75;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ── Links ─────────────────────────────────────────────────────────────── */
+a {
+  color: inherit;
+  text-decoration-color: var(--linha);
+  text-underline-offset: 0.22em;
+  text-decoration-thickness: 1px;
+  transition: color .15s ease, text-decoration-color .15s ease;
+}
+a:hover { color: var(--acento); text-decoration-color: var(--acento); }
+
+:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.pular {
+  position: absolute;
+  left: -9999px;
+  background: var(--papel);
+  padding: .7rem 1rem;
+  font-family: var(--sans);
+  font-size: .85rem;
+  z-index: 10;
+}
+.pular:focus { left: 1rem; top: 1rem; }
+
+/* ── Topo e rodapé ─────────────────────────────────────────────────────── */
+.topo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem 1.6rem;
+  align-items: baseline;
+  justify-content: space-between;
+  max-width: 46rem;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2.2rem 1.5rem 1.4rem;
+}
+
+.marca {
+  font-size: 1.02rem;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--suave);
+}
+.marca:hover { color: var(--tinta); }
+
+.topo nav {
+  display: flex;
+  gap: 1.35rem;
+  font-family: var(--sans);
+  font-size: .82rem;
+  letter-spacing: .05em;
+}
+.topo nav a { color: var(--suave); text-decoration: none; }
+.topo nav a:hover { color: var(--acento); }
+
+main {
+  flex: 1;
+  max-width: 46rem;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1.5rem 1.5rem 5rem;
+}
+
+.rodape {
+  border-top: 1px solid var(--linha);
+  max-width: 46rem;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1.8rem 1.5rem 3rem;
+  font-family: var(--sans);
+  font-size: .78rem;
+  line-height: 1.7;
+  color: var(--suave);
+}
+.rodape p { margin: .2rem 0; }
+
+/* ── Capa ──────────────────────────────────────────────────────────────── */
+.capa {
+  font-size: clamp(2rem, 1.4rem + 3vw, 3.1rem);
+  font-weight: 400;
+  line-height: 1.12;
+  letter-spacing: -0.018em;
+  margin: 2.5rem 0 .5rem;
+  text-wrap: balance;
+}
+
+.sub {
+  font-family: var(--sans);
+  font-size: .9rem;
+  letter-spacing: .06em;
+  text-transform: lowercase;
+  color: var(--suave);
+  margin: 0 0 3.5rem;
+}
+
+h1 {
+  font-weight: 400;
+  font-size: clamp(1.7rem, 1.3rem + 1.8vw, 2.4rem);
+  line-height: 1.2;
+  letter-spacing: -0.012em;
+  margin: 2rem 0 .4rem;
+  text-wrap: balance;   /* impede título de deixar uma palavra órfã na 2ª linha */
+}
+
+h2 {
+  font-family: var(--sans);
+  font-size: .8rem;
+  font-weight: 600;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--suave);
+  margin: 3rem 0 1.2rem;
+}
+
+h3, h4, h5 {
+  font-weight: 600;
+  font-size: 1.05em;
+  margin: 2.2rem 0 .6rem;
+}
+
+/* ── Índices ───────────────────────────────────────────────────────────── */
+.lista { list-style: none; margin: 0; padding: 0; }
+
+.cartao {
+  padding: 1.25rem 0;
+  border-top: 1px solid var(--linha);
+}
+.cartao:last-child { border-bottom: 1px solid var(--linha); }
+
+.cartao > a {
+  display: block;
+  font-size: 1.22em;
+  line-height: 1.3;
+  text-decoration: none;
+  text-wrap: balance;
+}
+.cartao > a:hover { color: var(--acento); }
+
+.cartao time {
+  display: block;
+  font-family: var(--sans);
+  font-size: .74rem;
+  letter-spacing: .05em;
+  color: var(--suave);
+  margin-top: .35rem;
+}
+
+.cartao p {
+  margin: .5rem 0 0;
+  font-size: .93em;
+  line-height: 1.6;
+  color: var(--suave);
+  text-wrap: pretty;
+}
+
+.vazio { color: var(--suave); font-style: italic; }
+
+/* ── Texto ─────────────────────────────────────────────────────────────── */
+article > time {
+  display: block;
+  font-family: var(--sans);
+  font-size: .76rem;
+  letter-spacing: .06em;
+  color: var(--suave);
+  margin-bottom: 2.6rem;
+}
+
+article p { text-wrap: pretty; }
+
+/* Prosa: medida curta e hifenização. Parágrafo de livro, não de e-mail. */
+.prosa { max-width: var(--medida-prosa); }
+.prosa p {
+  margin: 0 0 1.35em;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+
+/* Verso: NUNCA justificar. Justificar estica o espaço entre as palavras, e no
+   poema o espaço é do autor, não do navegador. A quebra de linha já veio pronta
+   do arquivo — aqui ela só é respeitada. */
+.verso { max-width: var(--medida-verso); }
+
+.estrofe {
+  margin: 0 0 2.1em;
+  line-height: 1.9;
+  text-align: left;
+  text-wrap: nowrap;      /* verso não se reparte sozinho... */
+  hyphens: none;
+}
+/* ...mas em tela estreita, reparte-se antes de furar a margem. */
+@media (max-width: 30rem) {
+  .estrofe { text-wrap: wrap; text-indent: 0; }
+  .estrofe br + * { padding-left: 1em; }
+}
+
+/* Refrão: volta várias vezes na letra, então precisa se distinguir de relance
+   sem gritar. Itálico + barra lateral, na cor de acento. */
+.refrao {
+  font-style: italic;
+  border-left: 2px solid var(--acento);
+  padding-left: 1.15rem;
+  margin-left: -1.15rem;
+}
+
+.rotulo {
+  display: block;
+  font-family: var(--sans);
+  font-style: normal;
+  font-size: .68rem;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--suave);
+  margin-bottom: .5em;
+}
+
+blockquote {
+  margin: 2rem 0;
+  padding-left: 1.3rem;
+  border-left: 2px solid var(--linha);
+  color: var(--suave);
+  font-style: italic;
+}
+blockquote p { margin: 0; }
+
+hr {
+  border: 0;
+  margin: 2.8rem auto;
+  width: 4.5rem;
+  border-top: 1px solid var(--linha);
+}
+
+strong { font-weight: 600; }
+
+/* ── Navegação entre textos ────────────────────────────────────────────── */
+.vizinhos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between;
+  margin: 4rem 0 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--linha);
+  font-family: var(--sans);
+  font-size: .82rem;
+  line-height: 1.5;
+}
+.vizinhos a { text-decoration: none; color: var(--suave); max-width: 47%; }
+.vizinhos a:hover { color: var(--acento); }
+.vizinhos .prox { margin-left: auto; text-align: right; }
+
+.volta {
+  font-family: var(--sans);
+  font-size: .8rem;
+  color: var(--suave);
+}
+.volta a { text-decoration: none; }
+
+/* ── Impressão ─────────────────────────────────────────────────────────── */
+/* Poema se imprime. Alguém vai querer levar no bolso ou colar num caderno. */
+@media print {
+  .topo nav, .vizinhos, .volta, .rodape, .pular { display: none; }
+  body { background: #fff; color: #000; font-size: 11.5pt; }
+  main { padding: 0; }
+  .estrofe { page-break-inside: avoid; }
+  a { text-decoration: none; color: #000; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { transition: none !important; }
+}

@@ -1,0 +1,53 @@
+# Publica o site a cada `git push` na branch main.
+#
+# É isto que permite escrever um poema pelo celular, direto no site do GitHub,
+# sem Mac e sem HD: você salva o arquivo, o GitHub roda o gerador e o site sobe
+# em cerca de um minuto.
+name: Publicar
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:   # botão "Run workflow" para republicar sem alterar nada
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.publicacao.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Trava de segurança: publicar com a URL de exemplo enche o sitemap e as
+      # tags canônicas de endereço que não existe — e é ao Google que estaríamos
+      # mentindo. Melhor a publicação falhar aqui, ruidosamente.
+      - name: Conferir a URL do site
+        run: |
+          if grep -q 'SEU-USUARIO' site.json; then
+            echo "::error::A URL em site.json ainda é o exemplo. Troque pela real antes de publicar."
+            exit 1
+          fi
+
+      - name: Gerar o site
+        run: python3 gerar.py
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: publicacao
+        uses: actions/deploy-pages@v4

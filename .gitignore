@@ -1,0 +1,12 @@
+# Saída do gerador — se refaz sozinha a cada build, não entra no repositório.
+_site/
+
+# Lixo que o macOS espalha em HD ExFAT. Sem esta linha, cada texto vai para o
+# GitHub acompanhado de um arquivo binário `._nome.md` de 4 KB.
+._*
+.DS_Store
+.Spotlight-V100
+.Trashes
+.fseventsd
+__pycache__/
+*.pyc
