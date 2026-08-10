@@ -1,21 +1,22 @@
 ---
 titulo: Dos versos que eu fiz
 data: 2026-08-10
-resumo: Se teu olhar toca o meu olhar, como negar-te o sorriso? Mesmo tentando esconder ele sempre vai contigo. É impossível disfarçar e me pergunto se perceb
+resumo: Se teu olhar toca o meu olhar, Como negar-te o sorriso? Se tento esconder, mesmo sem querer, Ele sempre vai contigo. É impossível disfarçar, Nem sei s
 ---
 
 Se teu olhar toca o meu olhar,
-como negar-te o sorriso?
-Mesmo tentando esconder ele sempre vai contigo.
-É impossível disfarçar e me pergunto se percebes,
-Que onde tu estás, mesmo que escondido,
-Sempre estou contigo.
+Como negar-te o sorriso?
+Se tento esconder, mesmo sem querer,
+Ele sempre vai contigo.
 
-Transparente para ti é meu sentimento,
-E cada vez que te olho, para e penso:
-É possível que o impossível aconteça?
-Se dizes que sim, fico eu assim, enfim:
-Para ti não existem segredos.
+É impossível disfarçar,
+Nem sei se chegas a notar,
+Que onde estás,
+Meu pensar vai contigo.
+
+Do meu sentir, tens conhecimento,
+Sabes ler até meus pensamentos.
+
 
 Se estais por perto, alegra-me o demorar das horas,
 Se ficas longe, sem falar ou escrever já penso:
