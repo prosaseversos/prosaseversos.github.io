@@ -126,8 +126,9 @@ textarea:focus{outline:0}
 .aviso{font-size:.8rem;color:var(--suave);border-left:2px solid var(--linha);
   padding-left:.9rem;margin-top:1.6rem}
 .oculto{display:none !important}
-.contagem{font-size:.74rem;color:var(--suave);padding:.35rem 1.1rem;
-  border-top:1px solid var(--linha)}
+.contagem{font-size:.74rem;color:var(--suave);padding:.3rem 1.1rem;
+  border-top:1px solid var(--linha);display:flex;align-items:center;gap:.9rem}
+.contagem button{font-size:.72rem;padding:.2rem .6rem;border-radius:5px}
 </style>
 </head>
 <body>
@@ -209,7 +210,11 @@ Em textos e artigos, as linhas se juntam em parágrafo.
 Numa composição, [Refrão] marca o refrão."></textarea>
         <div class="previa" id="previa"></div>
       </div>
-      <div class="contagem" id="contagem"></div>
+      <div class="contagem">
+        <span id="contagem"></span>
+        <button id="alinhar" class="oculto"
+          title="Tira o espaço da frente dos versos">alinhar versos à margem</button>
+      </div>
     </div>
   </div>
 </div>
@@ -378,6 +383,23 @@ function atualizarPrevia() {
   const palavras = corpo.trim() ? corpo.trim().split(/\s+/).length : 0;
   $("#contagem").textContent =
     `${linhas} linha(s) · ${palavras} palavra(s)` + (sujo ? " · não publicado" : "");
+  $("#alinhar").classList.toggle("oculto", !parecemColados(corpo));
+}
+
+/* Espaço solto na frente do verso — o rastro de texto colado.
+   Em poesia o recuo é forma e o site o preserva, então um espaço perdido vira um
+   dente na margem esquerda. Aconteceu no primeiro soneto publicado: 10 dos 14
+   versos tinham um espaço na frente, justamente os que não abriam estrofe.
+
+   O aviso aparece só no caso suspeito — recuo de 1 ou 2 espaços em mais de um
+   terço dos versos. Recuo de 4 ou mais é decisão de quem escreve e passa batido.
+   E é botão, não correção automática: quem decide a forma do poema é o autor. */
+function parecemColados(corpo) {
+  const linhas = corpo.split("\n").filter(l => l.trim());
+  if (linhas.length < 4) return false;
+  const recuos = linhas.map(l => l.length - l.replace(/^ +/, "").length).filter(n => n > 0);
+  if (recuos.length < linhas.length / 3) return false;
+  return Math.max(...recuos) <= 2;
 }
 
 /* ── Índice ───────────────────────────────────────────────────────────────── */
@@ -707,6 +729,15 @@ $("#token").onkeydown = e => { if (e.key === "Enter") $("#entrar").click(); };
 $("#novo").onclick = novo;
 $("#publicar").onclick = publicar;
 $("#apagar").onclick = apagar;
+$("#alinhar").onclick = () => {
+  const antes = $("#texto").value;
+  const depois = antes.split("\n").map(l => l.replace(/^ +/, "")).join("\n");
+  if (antes === depois) return;
+  $("#texto").value = depois;
+  sujo = true;
+  atualizarPrevia();
+  recado("Versos alinhados à margem. Publique para valer no site.", "info");
+};
 $("#abrirArquivo").onclick = () => $("#arquivo").click();
 $("#arquivo").onchange = e => { if (e.target.files[0]) importar(e.target.files[0]); e.target.value = ""; };
 $("#sair").onclick = () => {
