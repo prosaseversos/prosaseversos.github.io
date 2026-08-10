@@ -129,6 +129,39 @@ textarea:focus{outline:0}
 .contagem{font-size:.74rem;color:var(--suave);padding:.3rem 1.1rem;
   border-top:1px solid var(--linha);display:flex;align-items:center;gap:.9rem}
 .contagem button{font-size:.72rem;padding:.2rem .6rem;border-radius:5px}
+
+/* ── Revisão ─────────────────────────────────────────────────────────────── */
+.abas{display:flex;gap:.3rem;padding:.5rem .9rem 0;border-bottom:1px solid var(--linha)}
+.abas button{border:0;border-bottom:2px solid transparent;border-radius:0;
+  padding:.35rem .7rem;font-size:.76rem;letter-spacing:.04em;color:var(--suave)}
+.abas button[aria-selected="true"]{color:var(--acento);border-bottom-color:var(--acento);
+  font-weight:600}
+.direita{display:flex;flex-direction:column;min-width:0;border-left:1px solid var(--linha)}
+@media (max-width:820px){.direita{border-left:0;border-top:1px solid var(--linha)}}
+.direita .previa{border-left:0;flex:1}
+.revisao{flex:1;overflow-y:auto;padding:1.2rem 1.3rem;font-size:.85rem}
+.revisao h3{font-family:var(--sans);font-size:.68rem;font-weight:600;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--suave);margin:1.6rem 0 .7rem}
+.revisao h3:first-child{margin-top:0}
+
+table.versos{width:100%;border-collapse:collapse;font-size:.8rem}
+table.versos td{padding:.24rem .4rem;border-bottom:1px solid var(--linha);vertical-align:top}
+table.versos .n{color:var(--suave);text-align:right;width:2.4rem;font-variant-numeric:tabular-nums}
+table.versos .s{text-align:right;width:2.2rem;font-variant-numeric:tabular-nums}
+table.versos .r{width:2.6rem;font-weight:600;color:var(--acento)}
+table.versos .v{font-family:var(--serif);font-size:1.02em}
+.destoa{color:var(--erro);font-weight:600}
+
+.achado{border-left:2px solid var(--linha);padding:.5rem 0 .5rem .85rem;margin-bottom:.9rem}
+.achado .trecho{font-family:var(--mono);font-size:.8rem;background:var(--realce);
+  padding:.12rem .35rem;border-radius:4px}
+.achado .msg{color:var(--suave);font-size:.79rem;margin:.3rem 0 .45rem;line-height:1.5}
+.achado .sugs{display:flex;gap:.35rem;flex-wrap:wrap}
+.achado .sugs button{font-size:.78rem;padding:.2rem .55rem;border-radius:5px}
+.resumo{font-size:.8rem;color:var(--suave);line-height:1.6}
+.resumo b{color:var(--tinta)}
+.aviso-rede{font-size:.72rem;color:var(--suave);border-left:2px solid var(--linha);
+  padding-left:.7rem;margin-top:1.8rem;line-height:1.5}
 </style>
 </head>
 <body>
@@ -208,7 +241,14 @@ Em poesia e composições, cada quebra de linha é um verso e a linha em branco 
 Em textos e artigos, as linhas se juntam em parágrafo.
 
 Numa composição, [Refrão] marca o refrão."></textarea>
-        <div class="previa" id="previa"></div>
+        <div class="direita">
+          <div class="abas" role="tablist">
+            <button id="abaPrevia" role="tab" aria-selected="true">Prévia</button>
+            <button id="abaRevisao" role="tab" aria-selected="false">Revisão</button>
+          </div>
+          <div class="previa" id="previa"></div>
+          <div class="revisao oculto" id="revisao"></div>
+        </div>
       </div>
       <div class="contagem">
         <span id="contagem"></span>
@@ -713,6 +753,243 @@ async function entrar(t) {
   }
 }
 
+/* ═══ REVISÃO ════════════════════════════════════════════════════════════════
+   Duas coisas diferentes, de propósito:
+
+   1. MÉTRICA E RIMA — regra pura, aqui no navegador. Rima e metrificação são
+      fonética: têm lei. Modelo de linguagem chuta e às vezes inventa uma rima
+      que não existe; regra erra sempre do mesmo jeito, e dá para conferir.
+   2. ORTOGRAFIA E GRAMÁTICA — LanguageTool, que é um corretor de verdade para
+      português. Não uso IA com chave aqui porque esta página é pública: chave
+      colocada neste arquivo estaria à vista de qualquer um.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const VOGAIS = "aeiouáéíóúâêôàãõäëïöü";
+const FORTES = "aeoáéóâêôàã";
+const FRACAS = "iuíúïü";
+const INSEPARAVEL = ["br","bl","cr","cl","dr","fr","fl","gr","gl","pr","pl","tr","tl",
+                     "vr","vl","ch","lh","nh","gu","qu"];
+const ENCLITICOS = ["me","te","se","lhe","lhes","nos","vos","o","a","os","as",
+                    "lo","la","los","las","no","na","nas"];
+
+const temAcento = s => /[áéíóúâêôàãõ]/.test(s);
+const semEnclitico = p => {
+  const partes = p.toLowerCase().split("-");
+  while (partes.length > 1 && ENCLITICOS.includes(partes[partes.length - 1])) partes.pop();
+  return partes.join("-");
+};
+
+function silabas(palavra) {
+  const p = palavra.toLowerCase().replace(/[^a-zà-ÿ]/g, "");
+  if (!p) return [];
+  if (p === "ao" || p === "aos") return [p];   // ditongo, apesar das duas fortes
+  // o "u" de que/qui/gue/gui não soa: `que` é uma sílaba, não "qu-e"
+  const eVogal = (c, i) => VOGAIS.includes(c) &&
+    !(c === "u" && i > 0 && "qg".includes(p[i-1]) && i+1 < p.length && "eiéí".includes(p[i+1]));
+
+  const nucleos = [];
+  let i = 0;
+  while (i < p.length) {
+    if (!eVogal(p[i], i)) { i++; continue; }
+    let ini = i, fim = i;
+    while (fim + 1 < p.length && eVogal(p[fim+1], fim+1)) {
+      const a = p[fim], b = p[fim+1];
+      if ("ãõ".includes(a) && "oei".includes(b)) { fim++; continue; }   // ão, ãe, õe
+      if (FORTES.includes(a) && FORTES.includes(b)) break;              // hiato
+      if (FRACAS.includes(b) && temAcento(b)) break;                    // sa-ú-de
+      // po-e-si-a, di-a: paroxítona em ditongo crescente leva acento obrigatório
+      // (história, família), então sem acento a tônica cai na fraca — é hiato.
+      if (FRACAS.includes(a) && FORTES.includes(b) && fim+2 >= p.length && !temAcento(p)) break;
+      fim++;
+    }
+    nucleos.push([ini, fim]);
+    i = fim + 1;
+  }
+  if (!nucleos.length) return [p];
+
+  const cortes = [];
+  for (let n = 1; n < nucleos.length; n++) {
+    const fa = nucleos[n-1][1], ia = nucleos[n][0];
+    const cons = p.slice(fa + 1, ia);
+    let corte;
+    if (cons.length === 0) corte = ia;                                    // vo-o
+    else if (cons.length === 1) corte = ia - 1;                           // ca-sa
+    else if (INSEPARAVEL.includes(cons.slice(-2))) corte = ia - 2;        // a-bra-ço
+    else corte = ia - 1;                                                  // car-ta
+    cortes.push(Math.max(corte, fa + 1));
+  }
+  const out = []; let ini = 0;
+  for (const c of cortes) { out.push(p.slice(ini, c)); ini = c; }
+  out.push(p.slice(ini));
+  return out.filter(Boolean);
+}
+
+function tonica(palavra) {
+  palavra = semEnclitico(palavra);
+  const s = silabas(palavra);
+  if (s.length <= 1) return 0;
+  const i = s.findIndex(temAcento);
+  if (i >= 0) return i;                                    // acento gráfico manda
+  const p = semAcento(palavra).replace(/[^a-z]/g, "");
+  if (/(r|l|z|i|u|im|om|um)s?$/.test(p)) return s.length - 1;   // oxítona
+  return s.length - 2;                                          // paroxítona
+}
+
+function terminacao(palavra) {
+  palavra = semEnclitico(palavra);
+  const s = silabas(palavra);
+  if (!s.length) return "";
+  return semAcento(s.slice(tonica(palavra)).join(""))
+    .replace(/ss/g,"s").replace(/rr/g,"r").replace(/ç/g,"s").replace(/z$/,"s")
+    .replace(/^(.*?)([aeiou])/, "$2");     // corta a consoante antes da tônica
+}
+
+const soVogais = t => t.split("").filter(c => "aeiou".includes(c)).join("");
+
+/* Sílabas POÉTICAS: conta até a última tônica, com elisão. "Decassílabo" quer
+   dizer 10 até a tônica final — não 10 sílabas no total. */
+function metrica(verso) {
+  const palavras = verso.toLowerCase().match(/[a-zà-ÿ]+(?:-[a-zà-ÿ]+)*/g) || [];
+  if (!palavras.length) return {silabas: 0, ultima: ""};
+  const todas = [];
+  palavras.forEach((p, iP) => silabas(p).forEach((s, iS) =>
+    todas.push({texto: s, palavra: iP, indice: iS})));
+
+  const juntas = [];
+  for (const s of todas) {                    // elisão: "de água" = "dá-gua"
+    const a = juntas[juntas.length - 1];
+    if (a && a.palavra !== s.palavra && VOGAIS.includes(a.texto.slice(-1))
+        && VOGAIS.includes(s.texto[0])) {
+      a.texto += s.texto; a.palavra = s.palavra; a.indice = s.indice; continue;
+    }
+    juntas.push({...s});
+  }
+  const ult = palavras[palavras.length - 1], tU = tonica(ult);
+  let corte = juntas.length;
+  for (let i = juntas.length - 1; i >= 0; i--)
+    if (juntas[i].palavra === palavras.length - 1 && juntas[i].indice === tU) { corte = i+1; break; }
+  return {silabas: corte, ultima: ult};
+}
+
+function analisarPoema(corpo) {
+  const grupos = [], LETRAS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  return corpo.split("\n").map(l => l.trim()).filter(Boolean).map(v => {
+    const m = metrica(v), t = terminacao(m.ultima), vo = soVogais(t);
+    let g = grupos.find(x => x.termo === t);
+    let toanteCom = null;
+    if (!g) {
+      // toante só com 2+ vogais em comum; com uma só, toda oxítona em -er
+      // "rimaria" com toda em -e, e a análise viraria ruído
+      const par = grupos.find(x => x.vogais === vo && vo.length >= 2);
+      if (par) toanteCom = par.letra;
+      g = {termo: t, vogais: vo, letra: LETRAS[grupos.length] || "?"};
+      grupos.push(g);
+    }
+    return {verso: v, silabas: m.silabas, letra: g.letra, toanteCom};
+  });
+}
+
+/* ── LanguageTool ─────────────────────────────────────────────────────────────
+   API pública, sem chave e com CORS liberado. ⚠️ O texto SAI deste computador
+   e vai para o servidor deles — por isso o painel avisa, e por isso a revisão
+   só acontece quando você clica. Nada é enviado enquanto você escreve. */
+async function revisarTexto(texto) {
+  const corpo = new URLSearchParams({text: texto, language: "pt-BR"});
+  const r = await fetch("https://api.languagetool.org/v2/check",
+    {method: "POST", body: corpo,
+     headers: {"Content-Type": "application/x-www-form-urlencoded"}});
+  if (r.status === 429) throw new Error("O corretor pediu para esperar um pouco (limite de uso). Tente em 1 minuto.");
+  if (!r.ok) throw new Error(`o corretor respondeu ${r.status}`);
+  return (await r.json()).matches || [];
+}
+
+let achadosAtuais = [];
+
+function aplicarSugestao(i, valor) {
+  const m = achadosAtuais[i];
+  if (!m) return;
+  const t = $("#texto").value;
+  $("#texto").value = t.slice(0, m.offset) + valor + t.slice(m.offset + m.length);
+  sujo = true;
+  atualizarPrevia();
+  rodarRevisao();          // offsets mudaram: refaz em vez de remendar
+}
+
+async function rodarRevisao() {
+  const secao = SECOES.find(s => s.pasta === $("#secao").value);
+  const corpo = $("#texto").value;
+  const alvo = $("#revisao");
+  if (!corpo.trim()) { alvo.innerHTML = '<p class="resumo">Nada escrito ainda.</p>'; return; }
+
+  let html = "";
+
+  // 1) Métrica e rima — só em verso, e sem rede
+  if (secao.verso) {
+    const a = analisarPoema(corpo);
+    const cont = {};
+    a.forEach(r => cont[r.silabas] = (cont[r.silabas] || 0) + 1);
+    const comum = +Object.entries(cont).sort((x, y) => y[1] - x[1])[0][0];
+    const regular = cont[comum] >= a.length * 0.7;
+
+    html += "<h3>versos</h3><table class='versos'>";
+    a.forEach((r, i) => {
+      const fora = regular && r.silabas !== comum;
+      html += `<tr><td class="n">${i+1}</td>`
+            + `<td class="s ${fora ? "destoa" : ""}">${r.silabas}</td>`
+            + `<td class="r">${r.letra}${r.toanteCom ? `<span style="opacity:.5">~${r.toanteCom}</span>` : ""}</td>`
+            + `<td class="v">${esc(r.verso.slice(0, 44))}</td></tr>`;
+    });
+    html += "</table><p class='resumo' style='margin-top:.8rem'>";
+    html += `Esquema de rimas: <b>${a.map(r => r.letra).join("")}</b><br>`;
+    html += regular
+      ? `Metro: <b>${comum} sílabas</b> na maioria` +
+        (cont[comum] < a.length ? ` — ${a.length - cont[comum]} verso(s) fora, em vermelho.` : ", em todos.")
+      : `Metro <b>livre</b>: os versos vão de ${Math.min(...a.map(r=>r.silabas))} a ${Math.max(...a.map(r=>r.silabas))} sílabas.`;
+    html += "<br><span style='opacity:.75'>A contagem é poética: vai até a última sílaba forte do verso, "
+          + "e junta vogais entre palavras (elisão). O <b>~</b> marca rima imperfeita (toante).</span></p>";
+  }
+
+  // 2) Ortografia e gramática
+  html += "<h3>ortografia e gramática</h3><div id='achados'>procurando…</div>";
+  html += `<p class="aviso-rede">A conferência de ortografia manda o texto para o
+    LanguageTool, um corretor gratuito que roda fora daqui. Só acontece quando você
+    clica em Revisar — nunca enquanto escreve. A análise de versos, essa é feita
+    aqui mesmo e não sai do aparelho.</p>`;
+  alvo.innerHTML = html;
+
+  try {
+    achadosAtuais = await revisarTexto(corpo);
+    const cx = $("#achados");
+    if (!achadosAtuais.length) {
+      cx.innerHTML = '<p class="resumo">Nada encontrado.</p>';
+      return;
+    }
+    cx.innerHTML = achadosAtuais.map((m, i) => {
+      const trecho = m.context.text.substr(m.context.offset, m.context.length);
+      const sugs = (m.replacements || []).slice(0, 4);
+      return `<div class="achado">
+        <span class="trecho">${esc(trecho) || "(falta algo aqui)"}</span>
+        <p class="msg">${esc(m.message)}</p>
+        <div class="sugs">${sugs.map(s =>
+          `<button data-i="${i}" data-v="${esc(s.value)}">${esc(s.value)}</button>`).join("")}
+        </div></div>`;
+    }).join("");
+    cx.querySelectorAll("button[data-v]").forEach(b =>
+      b.onclick = () => aplicarSugestao(+b.dataset.i, b.dataset.v));
+  } catch (e) {
+    $("#achados").innerHTML = `<p class="resumo">Não deu para conferir agora: ${esc(e.message)}</p>`;
+  }
+}
+
+function mostrarAba(qual) {
+  const rev = qual === "revisao";
+  $("#abaPrevia").setAttribute("aria-selected", String(!rev));
+  $("#abaRevisao").setAttribute("aria-selected", String(rev));
+  $("#previa").classList.toggle("oculto", rev);
+  $("#revisao").classList.toggle("oculto", !rev);
+  if (rev) rodarRevisao();
+}
+
 /* ── Ligações ─────────────────────────────────────────────────────────────── */
 SECOES.forEach(s => {
   const o = document.createElement("option");
@@ -729,6 +1006,12 @@ $("#token").onkeydown = e => { if (e.key === "Enter") $("#entrar").click(); };
 $("#novo").onclick = novo;
 $("#publicar").onclick = publicar;
 $("#apagar").onclick = apagar;
+$("#abaPrevia").onclick = () => mostrarAba("previa");
+// Clicar na aba refaz a revisão. É de propósito que não seja automática enquanto
+// se escreve: cada revisão manda o texto para fora, e ninguém quer o poema
+// viajando a cada tecla.
+$("#abaRevisao").onclick = () => mostrarAba("revisao");
+
 $("#alinhar").onclick = () => {
   const antes = $("#texto").value;
   const depois = antes.split("\n").map(l => l.replace(/^ +/, "")).join("\n");
