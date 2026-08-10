@@ -158,6 +158,14 @@ table.versos .v{font-family:var(--serif);font-size:1.02em}
 .achado .msg{color:var(--suave);font-size:.79rem;margin:.3rem 0 .45rem;line-height:1.5}
 .achado .sugs{display:flex;gap:.35rem;flex-wrap:wrap}
 .achado .sugs button{font-size:.78rem;padding:.2rem .55rem;border-radius:5px}
+.achado .sugs button.pt{border-style:dashed;color:var(--suave)}
+.achado .vezes{font-size:.7rem;color:var(--suave);margin-left:.4rem}
+details.estilo{margin-top:1.4rem;border-top:1px solid var(--linha);padding-top:.9rem}
+details.estilo summary{font-size:.78rem;color:var(--suave);cursor:pointer;
+  list-style:none;padding:.2rem 0}
+details.estilo summary::before{content:"▸ ";color:var(--acento)}
+details.estilo[open] summary::before{content:"▾ "}
+details.estilo > .achado{margin-top:.8rem}
 .resumo{font-size:.8rem;color:var(--suave);line-height:1.6}
 .resumo b{color:var(--tinta)}
 .aviso-rede{font-size:.72rem;color:var(--suave);border-left:2px solid var(--linha);
@@ -977,16 +985,60 @@ async function rodarRevisao() {
       cx.innerHTML = '<p class="resumo">Nada encontrado.</p>';
       return;
     }
-    cx.innerHTML = achadosAtuais.map((m, i) => {
+
+    // ── Erro de verdade × palpite de estilo ──────────────────────────────────
+    // O LanguageTool mistura as duas coisas. Num poema, "pra" no lugar de "para"
+    // e a vírgula que ele quer pôr depois de "Sim" não são erros: são a fala e o
+    // ritmo que o autor escolheu. Por isso o estilo vem separado, e em verso ele
+    // vem fechado — para não afogar os erros de verdade no meio de opinião.
+    const eEstilo = m => m.rule.issueType === "style"
+                      || (m.rule.category && /style|redundan|typograph/i.test(m.rule.category.id || ""));
+
+    // O mesmo erro repetido é UM erro. "Tú" aparecia seis vezes na lista.
+    const chave = m => `${m.rule.id}|${m.context.text.substr(m.context.offset, m.context.length)}`;
+    const juntar = lista => {
+      const mapa = new Map();
+      lista.forEach(({m, i}) => {
+        const k = chave(m);
+        if (mapa.has(k)) mapa.get(k).vezes++;
+        else mapa.set(k, {m, i, vezes: 1});
+      });
+      return [...mapa.values()];
+    };
+
+    const todos = achadosAtuais.map((m, i) => ({m, i}));
+    const erros  = juntar(todos.filter(x => !eEstilo(x.m)));
+    const estilo = juntar(todos.filter(x =>  eEstilo(x.m)));
+
+    const bloco = ({m, i, vezes}) => {
       const trecho = m.context.text.substr(m.context.offset, m.context.length);
       const sugs = (m.replacements || []).slice(0, 4);
+      // ⚠️ Algumas regras devolvem grafia de Portugal mesmo pedindo pt-BR:
+      // "matrimonio" → "matrimónio", quando aqui é "matrimônio". Marcamos as
+      // suspeitas (mesma palavra, só o acento muda para agudo) em vez de aplicar calado.
+      const suspeita = s => semAcento(s) === semAcento(trecho) && /[óé]/.test(s) && !/[óé]/.test(trecho);
       return `<div class="achado">
-        <span class="trecho">${esc(trecho) || "(falta algo aqui)"}</span>
+        <span class="trecho">${esc(trecho) || "(falta algo aqui)"}</span>${
+          vezes > 1 ? `<span class="vezes">${vezes}×</span>` : ""}
         <p class="msg">${esc(m.message)}</p>
         <div class="sugs">${sugs.map(s =>
-          `<button data-i="${i}" data-v="${esc(s.value)}">${esc(s.value)}</button>`).join("")}
+          `<button data-i="${i}" data-v="${esc(s.value)}"${suspeita(s.value)
+            ? ' class="pt" title="Confira: pode ser a grafia de Portugal (lá é ó, aqui é ô)"' : ""
+          }>${esc(s.value)}${suspeita(s.value) ? " ⚠" : ""}</button>`).join("")}
         </div></div>`;
-    }).join("");
+    };
+
+    cx.innerHTML =
+      (erros.length
+        ? erros.map(bloco).join("")
+        : '<p class="resumo">Nenhum erro de ortografia ou gramática.</p>')
+      + (estilo.length
+        ? `<details class="estilo"${secao.verso ? "" : " open"}>
+             <summary>${estilo.length} sugest${estilo.length > 1 ? "ões" : "ão"} de estilo`
+           + `${secao.verso ? " — em poesia, quase sempre é para ignorar" : ""}</summary>`
+           + estilo.map(bloco).join("") + "</details>"
+        : "");
+
     cx.querySelectorAll("button[data-v]").forEach(b =>
       b.onclick = () => aplicarSugestao(+b.dataset.i, b.dataset.v));
   } catch (e) {
