@@ -419,7 +419,13 @@ def gerar():
     # ferramenta de trabalho, não conteúdo. Sem token não faz nada.
     painel = TEMA / "admin.html"
     if painel.exists():
-        escrever("admin/index.html", painel.read_text(encoding="utf-8"))
+        # Carimba a hora do build no painel. O GitHub Pages manda o navegador
+        # guardar a página por 10 minutos (`cache-control: max-age=600`), e sem
+        # esta marca não há como saber, olhando a tela, se o painel é o de agora
+        # ou um de antes — o que já custou uma confusão inteira.
+        escrever("admin/index.html",
+                 painel.read_text(encoding="utf-8")
+                       .replace("{{VERSAO}}", datetime.now().strftime("%d/%m %H:%M")))
 
     escrever("sitemap.xml", monta_sitemap(cfg, urls))
     escrever("robots.txt",

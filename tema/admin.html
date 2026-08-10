@@ -285,6 +285,10 @@ Numa composição, [Refrão] marca o refrão."></textarea>
         <span id="contagem"></span>
         <button id="alinhar" class="oculto"
           title="Tira o espaço da frente dos versos">alinhar versos à margem</button>
+        <!-- O GitHub Pages manda o navegador guardar esta página por 10 minutos.
+             Sem esta marca não há como saber se o que está na tela é a versão de
+             agora ou uma de antes — e a diferença já custou uma confusão. -->
+        <span id="versao" title="Versão do painel. Está velha? Cmd+Shift+R recarrega."></span>
       </div>
     </div>
   </div>
@@ -298,6 +302,7 @@ Numa composição, [Refrão] marca o refrão."></textarea>
    Não existe banco nem cópia intermediária — a fonte é o repositório.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+const VERSAO = "{{VERSAO}}";   // o gerador troca isto pela hora do build
 const DONO = "prosaseversos";
 const REPO = "prosaseversos.github.io";
 const API  = `https://api.github.com/repos/${DONO}/${REPO}`;
@@ -986,20 +991,35 @@ async function rodarRevisao() {
     const comPar = [...porLetra.values()].filter(g => g.length > 1);
     const semPar = [...porLetra.values()].filter(g => g.length === 1).flat();
 
+    // Quanto do poema participa de alguma rima. Num verso livre isso é baixo, e
+    // aí NÃO há o que corrigir — listar quinze "sem par" seria inventar problema
+    // onde não existe. O revisor tem de saber calar quando não há o que dizer.
+    const rimados = comPar.reduce((s, g) => s + g.length, 0);
+    const proporcao = a.length ? rimados / a.length : 0;
+    const rimado = proporcao >= 0.4;
+
     html += "<h3>rimas</h3>";
-    if (comPar.length) {
+    if (!rimado) {
+      html += `<p class="resumo">Este poema é de <b>verso livre</b>: `
+            + (rimados
+                ? `só ${rimados} dos ${a.length} versos caem em alguma rima.`
+                : `nenhum verso rima com outro.`)
+            + ` Não há rima a corrigir — se era essa a intenção, está certo assim.`;
+      if (comPar.length)
+        html += `<br><span style="opacity:.75">Os poucos que coincidem: `
+              + comPar.map(g => g.map(r => esc(r.ultima)).join("/")).join(" · ") + ".</span>";
+      html += "</p>";
+    } else {
       html += "<div class='rimas'>" + comPar.map(g =>
         `<div class="grupo"><span class="letra">${g[0].letra}</span>`
         + g.map(r => `<span class="pal" title="verso ${r.n}">${esc(r.ultima)}</span>`).join("")
         + `<span class="qtd">${g.length} versos</span></div>`).join("") + "</div>";
-    } else {
-      html += "<p class='resumo'>Nenhuma rima se repete — os finais são todos diferentes.</p>";
-    }
-    if (semPar.length) {
-      html += `<p class="resumo" style="margin-top:.7rem"><b>Sem rima:</b> `
-            + semPar.map(r => `<span class="pal solta" title="verso ${r.n}">${esc(r.ultima)}</span>`).join("")
-            + `<br><span style="opacity:.75">Estas terminações não combinam com nenhuma outra do poema.
-               Se a intenção era rimar, é aqui que falta.</span></p>`;
+      if (semPar.length) {
+        html += `<p class="resumo" style="margin-top:.7rem"><b>Ficaram sem par:</b> `
+              + semPar.map(r => `<span class="pal solta" title="verso ${r.n}">${esc(r.ultima)}</span>`).join("")
+              + `<br><span style="opacity:.75">O poema rima, mas estas terminações não
+                 acharam companhia. Se era para rimar, é aqui que falta.</span></p>`;
+      }
     }
 
     // ── MÉTRICA: quanto falta ou sobra, não só o número ──────────────────────
@@ -1199,6 +1219,8 @@ document.addEventListener("keydown", e => {
 
 // Fechar a aba com texto não publicado perde o texto: o navegador avisa.
 window.addEventListener("beforeunload", e => { if (sujo) { e.preventDefault(); e.returnValue = ""; } });
+
+$("#versao").textContent = VERSAO.startsWith("{{") ? "" : `painel de ${VERSAO}`;
 
 if (token) entrar(token); else $("#token").focus();
 </script>
