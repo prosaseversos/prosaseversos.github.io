@@ -528,6 +528,19 @@ async function publicar() {
   const data = $("#data").value || new Date().toISOString().slice(0, 10);
   const novoCaminho = `conteudo/${secao}/${data}-${slug(titulo)}.md`;
 
+  // A data é preenchida quando o texto é criado. Se a aba ficar aberta de um dia
+  // para o outro, ela envelhece sem ninguém notar — foi o que aconteceu com seis
+  // textos publicados em 10/08 carregando a data de 07/08, o que bagunça a ordem
+  // do site. Só pergunta em texto NOVO: reeditar texto antigo é normal.
+  const hoje = new Date().toISOString().slice(0, 10);
+  const brl = d => d.split("-").reverse().join("/");
+  if (!atual && data < hoje &&
+      !confirm(`A data deste texto é ${brl(data)}, e hoje é ${brl(hoje)}.\n\n`
+               + "Se esta aba ficou aberta desde aquele dia, a data envelheceu "
+               + "sozinha — e é ela que ordena os textos no site.\n\n"
+               + "Publicar assim mesmo?"))
+    return;
+
   // Trocar o título de um texto já publicado muda o nome do arquivo, e o
   // endereço vai junto — quem compartilhou o link fica com link quebrado.
   const mudouCaminho = atual && atual.caminho !== novoCaminho;

@@ -1,6 +1,6 @@
 ---
 titulo: Dos versos que eu fiz
-data: 2026-08-07
+data: 2026-08-10
 resumo: Se teu olhar toca o meu olhar, como negar-te o sorriso? Mesmo tentando esconder ele sempre vai contigo. É impossível disfarçar e me pergunto se perceb
 ---
 

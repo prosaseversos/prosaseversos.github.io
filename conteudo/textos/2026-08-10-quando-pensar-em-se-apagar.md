@@ -1,6 +1,6 @@
 ---
 titulo: Quando pensar em se apagar!
-data: 2026-08-07
+data: 2026-08-10
 resumo: Quando o brilho se vai, quantos ficarão a te admirar? Pode por acaso ter algum valor um diamante sem brilho? Pode valer algo escondido dentro da rocha
 ---
 

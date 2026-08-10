@@ -1,6 +1,6 @@
 ---
 titulo: Entre desistir
-data: 2026-08-07
+data: 2026-08-10
 resumo: Entre desistir, Entre se render, Entre deixar para lá, O melhor sempre será resistir e mostrar ao mundo quem realmente somos! Vivemos hoje uma cultura
 ---
 

@@ -1,6 +1,6 @@
 ---
 titulo: Sobre Casar
-data: 2026-08-07
+data: 2026-08-10
 resumo: Um senhor de bastante idade chegou a um consultório médico, pra fazer um curativo em sua mão, na qual havia um profundo corte. E muito apressado pediu
 ---
 
