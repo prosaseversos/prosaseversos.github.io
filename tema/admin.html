@@ -149,12 +149,35 @@ table.versos td{padding:.24rem .4rem;border-bottom:1px solid var(--linha);vertic
 table.versos .n{color:var(--suave);text-align:right;width:2.4rem;font-variant-numeric:tabular-nums}
 table.versos .s{text-align:right;width:2.2rem;font-variant-numeric:tabular-nums}
 table.versos .r{width:2.6rem;font-weight:600;color:var(--acento)}
-table.versos .v{font-family:var(--serif);font-size:1.02em}
+table.versos .v{font-family:var(--serif);font-size:1.02em;color:var(--suave)}
+table.versos .v .fim{color:var(--tinta);font-weight:600}
+table.versos .dif{width:2rem;text-align:right;font-size:.72rem;color:var(--erro);
+  font-variant-numeric:tabular-nums}
 .destoa{color:var(--erro);font-weight:600}
+
+/* Rimas: as palavras agrupadas. É isto que responde "o que corrigir" — a letra
+   sozinha ("ABCB") não diz nada a quem está escrevendo. */
+.rimas{display:flex;flex-direction:column;gap:.4rem}
+.grupo{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
+.grupo .letra{font-weight:700;color:var(--acento);width:1.2rem;flex:none}
+.pal{font-family:var(--serif);font-size:.95rem;background:var(--realce);
+  padding:.1rem .45rem;border-radius:5px}
+.pal.solta{background:none;border:1px dashed var(--linha);color:var(--suave)}
+.grupo .qtd{font-size:.7rem;color:var(--suave);margin-left:.2rem}
 
 .achado{border-left:2px solid var(--linha);padding:.5rem 0 .5rem .85rem;margin-bottom:.9rem}
 .achado .trecho{font-family:var(--mono);font-size:.8rem;background:var(--realce);
   padding:.12rem .35rem;border-radius:4px}
+/* A frase ao redor, com o pedaço errado marcado — é o que responde "onde?" */
+.achado .ctx{font-family:var(--serif);font-size:.92rem;line-height:1.5;margin:0 0 .35rem;
+  color:var(--tinta)}
+.achado .ctx mark{background:color-mix(in srgb,var(--erro) 22%,transparent);
+  color:inherit;padding:.05em .15em;border-radius:3px;font-weight:600}
+.achado .ondes{margin-top:.45rem;display:flex;gap:.35rem;flex-wrap:wrap;align-items:center}
+.achado .ondes .vezes{font-size:.72rem;color:var(--suave)}
+.achado button.ir{font-size:.7rem;padding:.12rem .45rem;border-radius:4px;
+  color:var(--suave);border-color:var(--linha)}
+.achado button.ir:hover{color:var(--acento);border-color:var(--acento)}
 .achado .msg{color:var(--suave);font-size:.79rem;margin:.3rem 0 .45rem;line-height:1.5}
 .achado .sugs{display:flex;gap:.35rem;flex-wrap:wrap}
 .achado .sugs button{font-size:.78rem;padding:.2rem .55rem;border-radius:5px}
@@ -906,7 +929,7 @@ function analisarPoema(corpo) {
       g = {termo: t, vogais: vo, letra: LETRAS[grupos.length] || "?"};
       grupos.push(g);
     }
-    return {verso: v, silabas: m.silabas, letra: g.letra, toanteCom};
+    return {verso: v, silabas: m.silabas, letra: g.letra, toanteCom, ultima: m.ultima};
   });
 }
 
@@ -952,22 +975,56 @@ async function rodarRevisao() {
     const comum = +Object.entries(cont).sort((x, y) => y[1] - x[1])[0][0];
     const regular = cont[comum] >= a.length * 0.7;
 
+    // ── RIMAS: quem rima com quem, e quem ficou sozinho ──────────────────────
+    // A letra sozinha ("ABCB") não diz o que fazer. O que serve é ver as palavras
+    // agrupadas — e principalmente quais terminações não acharam par nenhum.
+    const porLetra = new Map();
+    a.forEach((r, i) => {
+      if (!porLetra.has(r.letra)) porLetra.set(r.letra, []);
+      porLetra.get(r.letra).push({...r, n: i + 1});
+    });
+    const comPar = [...porLetra.values()].filter(g => g.length > 1);
+    const semPar = [...porLetra.values()].filter(g => g.length === 1).flat();
+
+    html += "<h3>rimas</h3>";
+    if (comPar.length) {
+      html += "<div class='rimas'>" + comPar.map(g =>
+        `<div class="grupo"><span class="letra">${g[0].letra}</span>`
+        + g.map(r => `<span class="pal" title="verso ${r.n}">${esc(r.ultima)}</span>`).join("")
+        + `<span class="qtd">${g.length} versos</span></div>`).join("") + "</div>";
+    } else {
+      html += "<p class='resumo'>Nenhuma rima se repete — os finais são todos diferentes.</p>";
+    }
+    if (semPar.length) {
+      html += `<p class="resumo" style="margin-top:.7rem"><b>Sem rima:</b> `
+            + semPar.map(r => `<span class="pal solta" title="verso ${r.n}">${esc(r.ultima)}</span>`).join("")
+            + `<br><span style="opacity:.75">Estas terminações não combinam com nenhuma outra do poema.
+               Se a intenção era rimar, é aqui que falta.</span></p>`;
+    }
+
+    // ── MÉTRICA: quanto falta ou sobra, não só o número ──────────────────────
     html += "<h3>versos</h3><table class='versos'>";
     a.forEach((r, i) => {
-      const fora = regular && r.silabas !== comum;
+      const dif = regular ? r.silabas - comum : 0;
+      const fora = regular && dif !== 0;
       html += `<tr><td class="n">${i+1}</td>`
             + `<td class="s ${fora ? "destoa" : ""}">${r.silabas}</td>`
+            + `<td class="dif">${fora ? (dif > 0 ? `+${dif}` : dif) : ""}</td>`
             + `<td class="r">${r.letra}${r.toanteCom ? `<span style="opacity:.5">~${r.toanteCom}</span>` : ""}</td>`
-            + `<td class="v">${esc(r.verso.slice(0, 44))}</td></tr>`;
+            + `<td class="v">${esc(r.verso.slice(0, 38))}<b class="fim">${esc(r.ultima)}</b></td></tr>`;
     });
     html += "</table><p class='resumo' style='margin-top:.8rem'>";
-    html += `Esquema de rimas: <b>${a.map(r => r.letra).join("")}</b><br>`;
     html += regular
-      ? `Metro: <b>${comum} sílabas</b> na maioria` +
-        (cont[comum] < a.length ? ` — ${a.length - cont[comum]} verso(s) fora, em vermelho.` : ", em todos.")
-      : `Metro <b>livre</b>: os versos vão de ${Math.min(...a.map(r=>r.silabas))} a ${Math.max(...a.map(r=>r.silabas))} sílabas.`;
-    html += "<br><span style='opacity:.75'>A contagem é poética: vai até a última sílaba forte do verso, "
-          + "e junta vogais entre palavras (elisão). O <b>~</b> marca rima imperfeita (toante).</span></p>";
+      ? `Metro: <b>${comum} sílabas</b> na maioria`
+        + (cont[comum] < a.length
+            ? ` — ${a.length - cont[comum]} verso(s) fora. A coluna do meio diz quantas
+                sílabas <b>sobram (+)</b> ou <b>faltam (−)</b> em cada um.`
+            : ", em todos.")
+      : `Metro <b>livre</b>: de ${Math.min(...a.map(r=>r.silabas))} a ${Math.max(...a.map(r=>r.silabas))}
+         sílabas. Se você queria metro fixo, escolha o número e a coluna passa a mostrar
+         quanto falta em cada verso.`;
+    html += "<br><span style='opacity:.75'>A contagem é poética: vai até a última sílaba forte "
+          + "do verso e junta vogais entre palavras (elisão). O <b>~</b> marca rima imperfeita.</span></p>";
   }
 
   // 2) Ortografia e gramática
@@ -1000,8 +1057,14 @@ async function rodarRevisao() {
       const mapa = new Map();
       lista.forEach(({m, i}) => {
         const k = chave(m);
-        if (mapa.has(k)) mapa.get(k).vezes++;
-        else mapa.set(k, {m, i, vezes: 1});
+        // guarda TODAS as posições: agrupar não pode custar o "onde"
+        if (mapa.has(k)) {
+          const g = mapa.get(k);
+          g.vezes++;
+          g.ondes.push({off: m.offset, len: m.length});
+        } else {
+          mapa.set(k, {m, i, vezes: 1, ondes: [{off: m.offset, len: m.length}]});
+        }
       });
       return [...mapa.values()];
     };
@@ -1010,22 +1073,40 @@ async function rodarRevisao() {
     const erros  = juntar(todos.filter(x => !eEstilo(x.m)));
     const estilo = juntar(todos.filter(x =>  eEstilo(x.m)));
 
-    const bloco = ({m, i, vezes}) => {
+    // Em que linha do texto cai este offset. Sem isto, o painel dizia "troque 'é'"
+    // sem dizer QUAL 'é' — e num poema com dez 'é' isso não ajuda ninguém.
+    const linhaDe = off => corpo.slice(0, off).split("\n").length;
+
+    const bloco = ({m, i, vezes, ondes}) => {
       const trecho = m.context.text.substr(m.context.offset, m.context.length);
       const sugs = (m.replacements || []).slice(0, 4);
       // ⚠️ Algumas regras devolvem grafia de Portugal mesmo pedindo pt-BR:
       // "matrimonio" → "matrimónio", quando aqui é "matrimônio". Marcamos as
       // suspeitas (mesma palavra, só o acento muda para agudo) em vez de aplicar calado.
       const suspeita = s => semAcento(s) === semAcento(trecho) && /[óé]/.test(s) && !/[óé]/.test(trecho);
+
+      // A frase ao redor, com o pedaço errado destacado. É o que responde "onde?".
+      const c = m.context;
+      const ctx = `${esc(c.text.slice(0, c.offset))}`
+                + `<mark>${esc(c.text.substr(c.offset, c.length)) || "▮"}</mark>`
+                + `${esc(c.text.slice(c.offset + c.length))}`;
+
+      const linhas = (ondes || [{off: m.offset, len: m.length}]);
+      const irs = linhas.map(o =>
+        `<button class="ir" data-off="${o.off}" data-len="${o.len}"
+                 title="Levar o cursor até aqui">linha ${linhaDe(o.off)}</button>`).join("");
+
       return `<div class="achado">
-        <span class="trecho">${esc(trecho) || "(falta algo aqui)"}</span>${
-          vezes > 1 ? `<span class="vezes">${vezes}×</span>` : ""}
+        <p class="ctx">${ctx}</p>
         <p class="msg">${esc(m.message)}</p>
-        <div class="sugs">${sugs.map(s =>
-          `<button data-i="${i}" data-v="${esc(s.value)}"${suspeita(s.value)
-            ? ' class="pt" title="Confira: pode ser a grafia de Portugal (lá é ó, aqui é ô)"' : ""
-          }>${esc(s.value)}${suspeita(s.value) ? " ⚠" : ""}</button>`).join("")}
-        </div></div>`;
+        <div class="sugs">
+          ${sugs.map(s =>
+            `<button data-i="${i}" data-v="${esc(s.value)}"${suspeita(s.value)
+              ? ' class="pt" title="Confira: pode ser a grafia de Portugal (lá é ó, aqui é ô)"' : ""
+            }>${esc(s.value)}${suspeita(s.value) ? " ⚠" : ""}</button>`).join("")}
+        </div>
+        <div class="ondes">${vezes > 1 ? `<span class="vezes">${vezes} vezes:</span> ` : ""}${irs}</div>
+      </div>`;
     };
 
     cx.innerHTML =
@@ -1041,6 +1122,19 @@ async function rodarRevisao() {
 
     cx.querySelectorAll("button[data-v]").forEach(b =>
       b.onclick = () => aplicarSugestao(+b.dataset.i, b.dataset.v));
+
+    // "linha N" leva o cursor até o trecho e o deixa selecionado, para você ver
+    // no próprio texto onde está o problema.
+    cx.querySelectorAll("button.ir").forEach(b => b.onclick = () => {
+      const t = $("#texto");
+      const off = +b.dataset.off, len = +b.dataset.len;
+      t.focus();
+      t.setSelectionRange(off, off + len);
+      // rola até a linha: aproxima pela altura de linha do textarea
+      const linha = t.value.slice(0, off).split("\n").length;
+      const alt = parseFloat(getComputedStyle(t).lineHeight) || 22;
+      t.scrollTop = Math.max(0, (linha - 4) * alt);
+    });
   } catch (e) {
     $("#achados").innerHTML = `<p class="resumo">Não deu para conferir agora: ${esc(e.message)}</p>`;
   }
