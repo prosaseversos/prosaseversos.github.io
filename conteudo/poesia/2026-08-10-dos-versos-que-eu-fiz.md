@@ -16,16 +16,25 @@ Meu pensar vai contigo.
 
 Do meu sentir, tens conhecimento,
 Sabes ler até meus pensamentos.
+Como esconder de ti, nem tento,
+Quero estar contigo todo o momento.
 
+Se estás por perto, 
+Alegra-me o demorar das horas,
+Se ficas longe, 
+Sem falar ou escrever já penso:
 
-Se estais por perto, alegra-me o demorar das horas,
-Se ficas longe, sem falar ou escrever já penso:
 - Por que te demoras?
-Acaso não tens o mesmo gostar ou é inapropriado julgar,
-Que nada sentes ou simplesmente não te importas?
+Acaso não tens o mesmo gostar 
+Ou é inapropriado julgar,
+Que nada sentes por simplesmente não se importar.
 
-É impossível não perder a paz, se te vais e eu fico.
+É impossível não perder a paz, 
+Se vais e eu fico.
 A distância separa, a ansiedade me fala, 
 Deixa-me aflito.
-Tento entender, não acho o porquê e fica tudo sem sentido:
-Porque quando te vê o meu coração fica perdido.
+
+Tento entender, 
+Não acho o porquê e fica tudo sem sentido:
+Porque quando te vê 
+O meu coração fica perdido.
