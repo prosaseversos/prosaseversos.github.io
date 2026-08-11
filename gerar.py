@@ -559,6 +559,11 @@ def gerar_previas():
 
     # Uma página para escolher, com link para as três.
     SAIDA, NOINDEX = original, False
+    cores = TEMA / "cores.html"
+    if cores.exists():
+        (SAIDA / "previa").mkdir(parents=True, exist_ok=True)
+        (SAIDA / "previa" / "cores.html").write_text(
+            cores.read_text(encoding="utf-8"), encoding="utf-8")
     cartoes = "".join(
         f'<li><a href="{L}/"><b>{v["nome"]}</b>'
         f'<span>{ {"lista": "índice enxuto, como o de um livro",

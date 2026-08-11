@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Cores — Prosas e Versos</title>
+<style>
+/* Só as cores. Nenhuma decisão de layout aqui — a mesma caixa, o mesmo texto,
+   a mesma tipografia em todas. Assim a única coisa que muda é o que interessa. */
+:root{--ui:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+      --serif:'Iowan Old Style',Palatino,Georgia,serif}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--ui);background:#eceff2;color:#1a1f26;
+  -webkit-font-smoothing:antialiased}
+@media(prefers-color-scheme:dark){body{background:#0c0e11;color:#dfe4ea}}
+header{max-width:70rem;margin:0 auto;padding:3rem 1.4rem 1rem}
+h1{font-weight:600;font-size:1.5rem;margin:0 0 .3rem;letter-spacing:-0.02em}
+header p{margin:0;opacity:.7;font-size:.95rem;line-height:1.55;max-width:38rem}
+.grade{max-width:70rem;margin:0 auto;padding:1.6rem 1.4rem 5rem;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(17rem,1fr));gap:1.1rem}
+.amostra{border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.14)}
+.num{font-family:var(--ui);font-size:.68rem;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;padding:.55rem .9rem;display:flex;
+  justify-content:space-between;align-items:center}
+.corpo{padding:1.3rem 1.2rem 1.5rem;font-family:var(--serif);font-size:1rem;line-height:1.85}
+.corpo .t{font-size:1.18rem;line-height:1.25;margin:0 0 .2rem}
+.corpo .d{font-family:var(--ui);font-size:.66rem;letter-spacing:.08em;
+  text-transform:uppercase;margin:0 0 1rem;opacity:.75}
+.corpo .v{margin:0}
+.corpo .link{font-family:var(--ui);font-size:.76rem;margin-top:1.1rem;display:block}
+.tira{display:flex;height:7px}
+.tira span{flex:1}
+</style>
+</head>
+<body>
+<header>
+  <h1>Só as cores</h1>
+  <p>Mesma letra, mesmo texto, mesma caixa em todas — a única coisa que muda é a cor.
+     Diga o número da que ficar, ou aponte duas e eu misturo. Se nenhuma servir,
+     me diga uma cor que você gosta e eu construo a partir dela.</p>
+</header>
+<div class="grade" id="grade"></div>
+
+<script>
+/* fundo, texto, secundário, acento, nome */
+const PALETAS = [
+  ["#ffffff","#000000","#666666","#000000","Preto no branco — contraste total, sem cor nenhuma"],
+  ["#ffffff","#1c1c1c","#767676","#0b57d0","Branco e azul de link"],
+  ["#fbfbf9","#14181d","#6b7280","#0f2d52","Branco frio, azul-marinho fechado"],
+  ["#faf8f3","#1a1714","#7a7266","#1a1714","Marfim, tinta marrom-escura, sem acento"],
+  ["#ffffff","#111111","#6e6e6e","#8c1d18","Branco e vinho"],
+  ["#f7f4ee","#20201c","#77736a","#3d5a3d","Papel e verde-mato"],
+  ["#12151a","#e8eaed","#9aa0a6","#8ab4f8","Escuro, azul claro"],
+  ["#14120f","#eae4d8","#9c9184","#d9a441","Escuro quente, dourado"],
+  ["#1a1a1a","#f0f0f0","#9a9a9a","#f0f0f0","Preto e branco, invertido"],
+  ["#f4f1ec","#2b2622","#7d766c","#8a5a2b","Bege, marrom-caramelo"],
+  ["#ffffff","#151515","#707070","#5b21b6","Branco e roxo profundo"],
+  ["#f0f4f8","#0f172a","#64748b","#0f766e","Azul-gelo, verde-petróleo"],
+];
+
+document.getElementById("grade").innerHTML = PALETAS.map((p, i) => {
+  const [bg, tx, su, ac, nome] = p;
+  return `<div class="amostra" style="background:${bg};color:${tx}">
+    <div class="num" style="background:${ac};color:${bg}">
+      <span>${String(i + 1).padStart(2, "0")}</span><span style="opacity:.85">${nome}</span>
+    </div>
+    <div class="corpo">
+      <p class="t">Soneto dos sonhos meu</p>
+      <p class="d" style="color:${su}">poesia · 7 de agosto de 2026</p>
+      <p class="v">Quantas vezes, ao fechar os olhos, vejo-te,<br>
+        Teu sorriso ali estava;<br>
+        Quantas vezes, ao perder o sono,<br>
+        Tarde da noite, tua face contemplava.</p>
+      <a class="link" href="#" style="color:${ac}">continuar lendo →</a>
+    </div>
+    <div class="tira"><span style="background:${bg}"></span><span style="background:${tx}"></span>
+      <span style="background:${su}"></span><span style="background:${ac}"></span></div>
+  </div>`;
+}).join("");
+</script>
+</body>
+</html>
