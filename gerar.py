@@ -46,10 +46,18 @@ TEMA = RAIZ / "tema"
 #     lista   só os títulos, em ordem — o índice de um livro
 #     capa    o texto mais recente inteiro na primeira tela, e a lista abaixo
 #     indice  tudo à mostra, agrupado por seção, com as primeiras linhas
+# As três atuais nasceram de pesquisa nos cinco maiores sites de poesia do mundo
+# (Poetry Foundation, Poets.org, AllPoetry, Paris Review, HelloPoetry) e nas
+# tendências de 2026 — não de gosto. O achado que derrubou as três primeiras:
+# TODOS eles usam branco e preto, com cor em um lugar só. As paletas de creme,
+# verde e tijolo que eu vinha propondo não existem no segmento.
 VARIACOES = {
-    "a": {"nome": "Livro",   "css": "visual-livro.css",   "home": "lista"},
-    "b": {"nome": "Revista", "css": "visual-revista.css", "home": "capa"},
-    "c": {"nome": "Caderno", "css": "visual-caderno.css", "home": "indice"},
+    "a": {"nome": "Galeria", "css": "visual-galeria.css", "home": "capa",
+          "de": "Poetry Foundation + Paris Review"},
+    "b": {"nome": "Diário",  "css": "visual-diario.css",  "home": "capa",
+          "de": "Poets.org — o Poem-a-Day"},
+    "c": {"nome": "Noturno", "css": "visual-noturno.css", "home": "lista",
+          "de": "as tendências de 2026: escuro por padrão"},
 }
 ESTILO = "estilo.css"     # trocados quando se gera uma prévia
 HOME = "lista"
@@ -566,9 +574,7 @@ def gerar_previas():
             cores.read_text(encoding="utf-8"), encoding="utf-8")
     cartoes = "".join(
         f'<li><a href="{L}/"><b>{v["nome"]}</b>'
-        f'<span>{ {"lista": "índice enxuto, como o de um livro",
-                   "capa": "o texto mais novo inteiro na primeira tela",
-                   "indice": "tudo à mostra, agrupado por seção"}[v["home"]] }</span></a></li>'
+        f'<span>inspirado em {html.escape(v.get("de", ""))}</span></a></li>'
         for L, v in VARIACOES.items())
     (SAIDA / "previa").mkdir(parents=True, exist_ok=True)
     (SAIDA / "previa" / "index.html").write_text(f"""<!doctype html>
@@ -577,20 +583,62 @@ def gerar_previas():
 <meta name="robots" content="noindex,nofollow">
 <title>Três aparências — {html.escape(cfg['nome'])}</title>
 <style>
- body{{font:16px/1.6 -apple-system,BlinkMacSystemFont,system-ui,sans-serif;
-   max-width:32rem;margin:12vh auto;padding:0 1.4rem;background:#f6f8fa;color:#16202c}}
- @media(prefers-color-scheme:dark){{body{{background:#0f151d;color:#d5dde6}}}}
- h1{{font-weight:400;font-size:1.6rem;margin:0 0 .3rem}}
- p{{color:#5c6b7d;margin:0 0 2rem}}
- ul{{list-style:none;padding:0;margin:0}} li{{margin-bottom:.7rem}}
- a{{display:block;padding:1rem 1.1rem;border:1px solid #dde4ec;border-radius:10px;
+ :root{{--bg:#ffffff;--tx:#0a0a0a;--su:#6b6b6b;--ln:#e5e5e5;--ac:#0b57d0}}
+ @media(prefers-color-scheme:dark){{:root{{--bg:#0d0d0d;--tx:#f2f2f2;--su:#9a9a9a;--ln:#242424;--ac:#8ab4f8}}}}
+ *{{box-sizing:border-box}}
+ body{{font:16px/1.65 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+   max-width:40rem;margin:0 auto;padding:4rem 1.4rem 6rem;background:var(--bg);color:var(--tx)}}
+ h1{{font-weight:800;font-size:1.9rem;letter-spacing:-.03em;margin:0 0 .4rem}}
+ .sub{{color:var(--su);margin:0 0 2.6rem}}
+ h2{{font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+   color:var(--su);margin:3rem 0 1rem}}
+ ul.esc{{list-style:none;padding:0;margin:0}} ul.esc li{{margin-bottom:.8rem}}
+ ul.esc a{{display:block;padding:1.15rem 1.2rem;border:1px solid var(--ln);border-radius:12px;
    text-decoration:none;color:inherit}}
- a:hover{{border-color:#1f5c9e}}
- b{{display:block;font-size:1.05rem}} span{{color:#5c6b7d;font-size:.87rem}}
+ ul.esc a:hover{{border-color:var(--ac)}}
+ ul.esc b{{display:block;font-size:1.1rem;letter-spacing:-.01em}}
+ ul.esc span{{color:var(--su);font-size:.88rem}}
+ table{{width:100%;border-collapse:collapse;font-size:.88rem}}
+ td,th{{text-align:left;padding:.5rem .3rem;border-bottom:1px solid var(--ln);vertical-align:top}}
+ th{{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--su);font-weight:600}}
+ .achado{{border-left:3px solid var(--ac);padding:.2rem 0 .2rem 1rem;margin:1.4rem 0;
+   color:var(--su);font-size:.94rem;line-height:1.6}}
+ .achado b{{color:var(--tx)}}
+ .nota{{font-size:.84rem;color:var(--su);line-height:1.6;margin-top:2.5rem;
+   border-top:1px solid var(--ln);padding-top:1.4rem}}
 </style></head><body>
 <h1>Três aparências</h1>
-<p>Os mesmos textos, três jeitos. Abra as três e diga qual fica.</p>
-<ul>{cartoes}</ul>
+<p class="sub">Feitas a partir dos maiores sites de poesia do mundo, não de gosto meu.
+   Abra as três — inclusive no celular — e diga qual fica.</p>
+
+<ul class="esc">{cartoes}</ul>
+
+<h2>o que eu pesquisei</h2>
+<table>
+  <tr><th>site</th><th>tamanho</th><th>o que faz</th></tr>
+  <tr><td>Poetry Foundation</td><td>7M visitas/mês</td><td>branco, sans-serif pesada, cards</td></tr>
+  <tr><td>Poets.org</td><td>Academy of American Poets</td><td>poema inteiro na primeira tela</td></tr>
+  <tr><td>AllPoetry</td><td>1º da categoria Literatura</td><td>comunidade de autores</td></tr>
+  <tr><td>Paris Review</td><td>referência editorial</td><td>alto contraste, muito ar</td></tr>
+  <tr><td>HelloPoetry</td><td>top do segmento</td><td>publicação simples</td></tr>
+</table>
+
+<div class="achado">
+  <b>O que derrubou as três propostas anteriores:</b> todos eles usam
+  <b>branco e preto</b>, e a cor aparece em um lugar só — o link. As paletas de
+  creme, verde-mato e vermelho-tijolo que eu vinha propondo não existem no
+  segmento. Por isso pareciam erradas.
+</div>
+
+<div class="achado">
+  <b>E o que 2026 aponta:</b> a tipografia toma o lugar da imagem (título grande,
+  serifada de alto contraste), espaço em branco generoso, e escuro por padrão —
+  em tela OLED o preto puro não gasta bateria. É de onde vem a terceira proposta.
+</div>
+
+<p class="nota">Se ainda assim nenhuma servir, me diga o que cada uma errou —
+  ou aponte um site que você gosta, de qualquer assunto. Com uma referência de
+  verdade eu paro de tentar adivinhar.</p>
 </body></html>""", encoding="utf-8")
     print(f"\n    escolher em:  /previa/\n")
 

@@ -1,0 +1,161 @@
+/* ============================================================================
+   3 — NOTURNO        inspiração: as tendências de 2026, não um site específico
+
+   O que a pesquisa apontou como o rumo do design editorial em 2026:
+     · escuro por PADRÃO, não como opção escondida num botão
+     · preto de verdade (#000): em tela OLED — todo iPhone recente — pixel preto
+       fica desligado, então não gasta bateria e o contraste é absoluto
+     · a tipografia assume o lugar da imagem: título grande, serifada de alto
+       contraste, o texto como arquitetura da página
+     · espaço em branco (aqui, espaço em preto) generoso
+
+   Poesia à noite, no celular, é o caso de uso real disto.
+   ========================================================================= */
+
+:root {
+  --papel:  #000000;          /* preto real: OLED desliga o pixel */
+  --tinta:  #ededed;
+  --suave:  #8b8b8b;
+  --linha:  #262626;
+  --acento: #d4af6a;          /* um dourado baixo, só em detalhe */
+  --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia,
+           'Times New Roman', serif;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  color-scheme: dark;
+}
+/* Quem usa o sistema no claro recebe o inverso — mas o padrão desta proposta
+   é o escuro, e é assim que ela deve ser julgada. */
+@media (prefers-color-scheme: light) {
+  :root { --papel:#fbfbfb; --tinta:#111111; --suave:#6f6f6f;
+          --linha:#e6e6e6; --acento:#8a6d2f; color-scheme: light; }
+}
+
+*,*::before,*::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin:0; background: var(--papel); color: var(--tinta);
+  font-family: var(--serif);
+  font-size: clamp(1.1rem, 1.02rem + .42vw, 1.32rem);
+  line-height: 1.78; -webkit-font-smoothing: antialiased;
+  display:flex; flex-direction:column; min-height:100vh;
+}
+a { color: inherit; text-decoration: none; }
+:focus-visible { outline: 2px solid var(--acento); outline-offset: 3px; }
+.pular { position:absolute; left:-9999px; }
+.pular:focus { left:1rem; top:1rem; background:var(--papel); padding:.6rem 1rem; }
+
+.topo {
+  display:flex; align-items:center; gap:.7rem 1.8rem; flex-wrap:wrap;
+  max-width:48rem; width:100%; margin:0 auto; padding:1.8rem 1.5rem 1.3rem;
+  border-bottom:1px solid var(--linha);
+}
+.marca {
+  display:inline-flex; align-items:center; gap:.55rem;
+  font-family:var(--sans); font-size:.82rem; font-weight:600;
+  letter-spacing:.16em; text-transform:uppercase;
+}
+.marca .simbolo { width:1.2em; height:1.2em; flex:none; color:var(--acento); }
+.topo nav {
+  margin-left:auto; display:flex; gap:1.3rem;
+  font-family:var(--sans); font-size:.76rem; letter-spacing:.05em;
+}
+.topo nav a { color:var(--suave); }
+.topo nav a:hover { color:var(--acento); }
+
+main { flex:1; max-width:48rem; width:100%; margin:0 auto; padding:3.5rem 1.5rem 6rem; }
+.rodape {
+  border-top:1px solid var(--linha); max-width:48rem; width:100%; margin:0 auto;
+  padding:2rem 1.5rem 3.5rem;
+  font-family:var(--sans); font-size:.75rem; color:var(--suave); line-height:1.7;
+}
+.rodape p { margin:.15rem 0; }
+.rodape a:hover { color:var(--acento); }
+
+/* ── A tipografia no lugar da imagem ────────────────────────────────────── */
+.capa {
+  font-family: var(--serif); font-weight: 400;
+  font-size: clamp(2.4rem, 1.6rem + 4.2vw, 4.4rem);
+  line-height: .98; letter-spacing: -0.035em;
+  margin: 2.5rem 0 .6rem; text-wrap: balance;
+}
+.sub {
+  font-family:var(--sans); font-size:.84rem; color:var(--suave);
+  letter-spacing:.09em; text-transform:lowercase; margin:0 0 4.5rem;
+}
+
+h1 {
+  font-family: var(--serif); font-weight:400;
+  font-size: clamp(2rem, 1.45rem + 2.8vw, 3.2rem);
+  line-height:1.02; letter-spacing:-0.03em; margin:0 0 .35rem; text-wrap:balance;
+}
+h2 {
+  font-family:var(--sans); font-size:.7rem; font-weight:600;
+  letter-spacing:.2em; text-transform:uppercase; color:var(--acento);
+  margin:4rem 0 1.5rem;
+}
+
+/* ── Índice: linhas largas, número e título ─────────────────────────────── */
+.lista { list-style:none; margin:0; padding:0; }
+.lista.nua li {
+  border-bottom:1px solid var(--linha); padding:1.3rem 0;
+  display:flex; align-items:baseline; gap:1.2rem; flex-wrap:wrap;
+}
+.lista.nua li:first-child { border-top:1px solid var(--linha); }
+.lista.nua a {
+  flex:1 1 14rem; font-size:1.28em; line-height:1.2; letter-spacing:-0.015em;
+  text-wrap:balance;
+}
+.lista.nua a:hover { color:var(--acento); }
+.lista.nua .meta {
+  font-family:var(--sans); font-size:.72rem; color:var(--suave);
+  letter-spacing:.05em; white-space:nowrap;
+}
+
+.cartao { padding:1.3rem 0; border-bottom:1px solid var(--linha); }
+.cartao:first-child { border-top:1px solid var(--linha); }
+.cartao > a { display:block; font-size:1.24em; line-height:1.2; letter-spacing:-0.015em; text-wrap:balance; }
+.cartao > a:hover { color:var(--acento); }
+.cartao time { display:block; font-family:var(--sans); font-size:.7rem; color:var(--suave); margin-top:.35rem; letter-spacing:.05em; }
+.cartao p { margin:.5rem 0 0; font-size:.92rem; line-height:1.55; color:var(--suave); text-wrap:pretty;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.vazio { color:var(--suave); font-style:italic; }
+
+/* ── O texto ────────────────────────────────────────────────────────────── */
+article > time {
+  display:block; font-family:var(--sans); font-size:.74rem; color:var(--suave);
+  letter-spacing:.06em; margin-bottom:3rem;
+}
+article p { text-wrap:pretty; }
+.prosa { max-width:33rem; }
+.prosa p { margin:0 0 1.35em; hyphens:auto; -webkit-hyphens:auto; }
+.verso { max-width:31rem; }
+.estrofe { margin:0 0 2.1em; line-height:1.95; hyphens:none; }
+.refrao { font-style:italic; border-left:2px solid var(--acento); padding-left:1.2rem; margin-left:-1.2rem; }
+.rotulo {
+  display:block; font-family:var(--sans); font-style:normal; font-size:.64rem;
+  font-weight:600; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--acento); margin-bottom:.5em;
+}
+blockquote { margin:2.2rem 0; padding-left:1.4rem; border-left:2px solid var(--linha);
+  color:var(--suave); font-style:italic; }
+blockquote p { margin:0; }
+hr { border:0; margin:3rem 0; width:2.5rem; border-top:1px solid var(--acento); }
+strong { font-weight:600; }
+
+.vizinhos {
+  display:flex; justify-content:space-between; gap:1.2rem; flex-wrap:wrap;
+  margin:5rem 0 1.4rem; padding-top:1.6rem; border-top:1px solid var(--linha);
+  font-family:var(--sans); font-size:.8rem; line-height:1.4;
+}
+.vizinhos a { color:var(--suave); max-width:47%; }
+.vizinhos a:hover { color:var(--acento); }
+.vizinhos .prox { margin-left:auto; text-align:right; }
+.volta { font-family:var(--sans); font-size:.78rem; color:var(--suave); }
+.volta a:hover { color:var(--acento); }
+
+@media print {
+  .topo nav,.vizinhos,.volta,.rodape { display:none; }
+  body { background:#fff; color:#000; font-size:11.5pt; }
+  .estrofe { page-break-inside: avoid; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
