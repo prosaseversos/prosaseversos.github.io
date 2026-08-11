@@ -342,6 +342,24 @@ article p { text-wrap: pretty; }
   text-transform: uppercase; color: var(--vermelho); margin-bottom: .5em;
 }
 
+/* ── A declamação ───────────────────────────────────────────────────────────
+   Vem ANTES do poema na página, de propósito: quem chega pela seção Versos veio
+   ouvir. Quem quer só ler passa por cima em duas linhas. */
+.declamacao {
+  margin: 0 0 2.6rem;
+  padding: 1rem 1.2rem 1.1rem;
+  background: var(--realce);
+  border: 1px solid var(--linha);
+  border-left: 3px solid var(--vermelho);
+  border-radius: 0 8px 8px 0;
+}
+.declamacao figcaption {
+  font-family: var(--sans); font-size: .72rem; font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--vermelho); margin-bottom: .6rem;
+}
+.declamacao audio { display: block; width: 100%; height: 34px; }
+
 blockquote {
   margin: 2.2rem 0; padding: .9rem 1.3rem;
   border-left: 3px solid var(--azul); background: var(--azul-claro);

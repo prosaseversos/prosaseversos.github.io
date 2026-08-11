@@ -14,6 +14,7 @@
   "_secoes": "`verso: true` preserva quebra de linha e recuo (poema, letra). `verso: false` junta linhas em parágrafo (prosa). A ordem aqui é a ordem do menu.",
   "secoes": [
     { "pasta": "poesia",      "titulo": "Poesia",      "verso": true,  "descricao": "Poemas." },
+    { "pasta": "versos",      "titulo": "Versos",      "verso": true,  "descricao": "Versos declamados." },
     { "pasta": "composicoes", "titulo": "Composições", "verso": true,  "descricao": "Letras e canções." },
     { "pasta": "textos",      "titulo": "Textos",      "verso": false, "descricao": "Crônicas e escritos." },
     { "pasta": "artigos",     "titulo": "Artigos",     "verso": false, "descricao": "Artigos e ensaios." }

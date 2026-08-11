@@ -250,6 +250,10 @@ details.estilo > .achado{margin-top:.8rem}
           <label for="data">Data</label>
           <input id="data" type="date">
         </div>
+        <div class="campo oculto" id="campoAudio">
+          <label for="audio">Áudio (arquivo em midia/)</label>
+          <input id="audio" placeholder="declamacao.mp3" autocomplete="off">
+        </div>
       </div>
       <div class="editor">
         <textarea id="texto" spellcheck="true"
@@ -299,6 +303,7 @@ const SITE = `https://${DONO}.github.io`;
 // que o gerador não conhece e some do site sem dar erro.
 const SECOES = [
   {pasta:"poesia",      titulo:"Poesia",      verso:true},
+  {pasta:"versos",      titulo:"Versos",      verso:true},
   {pasta:"composicoes", titulo:"Composições", verso:true},
   {pasta:"textos",      titulo:"Textos",      verso:false},
   {pasta:"artigos",     titulo:"Artigos",     verso:false},
@@ -378,7 +383,10 @@ function montarArquivo() {
   const d = $("#data").value || new Date().toISOString().slice(0, 10);
   const corpo = $("#texto").value.trim();
   const resumo = corpo.replace(/[#>*_`]/g, "").replace(/\s+/g, " ").trim().slice(0, 150);
-  return `---\ntitulo: ${t}\ndata: ${d}\nresumo: ${resumo}\n---\n\n${corpo}\n`;
+  const audio = $("#audio").value.trim();
+  return `---\ntitulo: ${t}\ndata: ${d}\nresumo: ${resumo}\n`
+       + (audio ? `audio: ${audio}\n` : "")
+       + `---\n\n${corpo}\n`;
 }
 
 /* ── Prévia ───────────────────────────────────────────────────────────────────
@@ -447,6 +455,9 @@ function atualizarPrevia() {
   $("#contagem").textContent =
     `${linhas} linha(s) · ${palavras} palavra(s)` + (sujo ? " · não publicado" : "");
   $("#alinhar").classList.toggle("oculto", !parecemColados(corpo));
+  // Áudio só nas seções de verso — declamar prosa não é o caso de uso, e campo
+  // que não serve para nada na tela é campo que atrapalha.
+  $("#campoAudio").classList.toggle("oculto", !secao.verso);
 }
 
 /* Espaço solto na frente do verso — o rastro de texto colado.
@@ -516,6 +527,7 @@ async function abrir(item) {
     $("#data").value = (meta.data || "").slice(0, 10);
     $("#secao").value = item.secao.pasta;
     $("#texto").value = corpo.trim();
+    $("#audio").value = meta.audio || "";
     sujo = false;
     $("#apagar").disabled = false;     // há o que apagar: este texto existe no site
     limparRecado();
@@ -530,6 +542,7 @@ function novo() {
   $("#titulo").value = "";
   $("#data").value = new Date().toISOString().slice(0, 10);
   $("#texto").value = "";
+  $("#audio").value = "";
   sujo = false;
   $("#apagar").disabled = true;      // texto novo não existe no site: nada a apagar
   limparRecado();

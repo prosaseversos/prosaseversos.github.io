@@ -38,6 +38,7 @@ RAIZ = Path(__file__).resolve().parent
 SAIDA = RAIZ / "_site"
 TEXTOS = RAIZ / "conteudo"
 TEMA = RAIZ / "tema"
+MIDIA = RAIZ / "midia"   # áudio das declamações
 
 # ── Variações de aparência ───────────────────────────────────────────────────
 # O site pode ser gerado com caras diferentes para comparar antes de decidir.
@@ -154,6 +155,9 @@ def carregar_textos(cfg, avisos):
                 "secao": secao,
                 "corpo": corpo,
                 "resumo": meta.get("resumo", ""),
+                # Nome do arquivo em `midia/`. Existe para os versos declamados:
+                # o poema escrito e a voz dizendo o poema, na mesma página.
+                "audio": meta.get("audio", "").strip(),
                 "arquivo": arq,
             })
 
@@ -396,6 +400,26 @@ SCRIPT_TEMA = """<script>
 </script>"""
 
 
+def player(t):
+    """Toca a declamação, quando existe.
+
+    `preload="none"` de propósito: sem isso o navegador começa a baixar o áudio
+    só de abrir a página, e quem lê no celular paga o download de um MP3 que
+    talvez nem queira ouvir. Ele baixa quando a pessoa aperta o play.
+    """
+    if not t.get("audio"):
+        return ""
+    arq = t["audio"]
+    if not (MIDIA / arq).exists():
+        return ""              # arquivo some? melhor nada do que um player quebrado
+    e = lambda s: html.escape(str(s), quote=True)
+    return (f'<figure class="declamacao">'
+            f'<figcaption>Ouça o poema na voz do autor</figcaption>'
+            f'<audio controls preload="none" src="../../midia/{e(arq)}">'
+            f'<a href="../../midia/{e(arq)}">Baixar o áudio</a></audio>'
+            f'</figure>')
+
+
 def cartao(t, prefixo=""):
     """Item de índice. O resumo aparece para o leitor E é o que o Google mostra."""
     e = lambda s: html.escape(str(s), quote=True)
@@ -532,6 +556,7 @@ def gerar():
         corpo = (f'<article class="{"verso" if s["verso"] else "prosa"}">'
                  f'<h1>{html.escape(t["titulo"])}</h1>'
                  f'<time datetime="{t["data"].isoformat()}">{por_extenso(t["data"])}</time>'
+                 f'{player(t)}'
                  f'{render(t["corpo"], s["verso"])}'
                  f'{marca.filete_fim()}'
                  f'</article>'
@@ -586,6 +611,16 @@ def gerar():
 
     # A fonte é servida daqui, não de CDN: o site não pode depender de servidor
     # de terceiro para ter cara — e sem a fonte, o desenho todo muda.
+    # Áudio das declamações. Copiado como está — MP3 já vem comprimido, e
+    # recomprimir só pioraria.
+    if MIDIA.is_dir():
+        audios = [f for f in MIDIA.iterdir()
+                  if f.is_file() and not f.name.startswith(".")]
+        if audios:
+            (SAIDA / "midia").mkdir(parents=True, exist_ok=True)
+            for f in audios:
+                shutil.copy(f, SAIDA / "midia" / f.name)
+
     fontes = TEMA / "fontes"
     if fontes.is_dir():
         (SAIDA / "fontes").mkdir(parents=True, exist_ok=True)
