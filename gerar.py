@@ -22,6 +22,7 @@ A LIÇÃO DO FLAMMA (custou caro, não repetir)
     que você escreveu, o erro aparece na hora, não seis meses depois.
 """
 
+import hashlib
 import html
 import json
 import re
@@ -60,6 +61,7 @@ VARIACOES = {
           "de": "as tendências de 2026: escuro por padrão"},
 }
 ESTILO = "estilo.css"     # trocados quando se gera uma prévia
+VERSAO_CSS = "0"          # impressão digital do CSS, calculada no build
 HOME = "capa"
 NOINDEX = False
 
@@ -279,7 +281,12 @@ def pagina(cfg, *, titulo, descricao, caminho, conteudo, jsonld=None, capa=False
         # o mesmo texto acessível por dois caminhos vira conteúdo duplicado.
         f'<link rel="canonical" href="{e(url)}">',
         f'<link rel="alternate" type="application/rss+xml" title="{e(cfg["nome"])}" href="{e(cfg["url"])}/feed.xml">',
-        f'<link rel="stylesheet" href="{prof}{ESTILO}">',
+        # ⚠️ O `?v=` é a impressão digital do próprio CSS. Sem ele, o navegador
+        # guarda a folha por 10 minutos (`cache-control: max-age=600` do GitHub
+        # Pages) e continua desenhando o site com as cores antigas — mudança
+        # publicada, tela igual, e ninguém entende por quê. Como o número muda
+        # junto com o arquivo, endereço novo = busca nova, na hora.
+        f'<link rel="stylesheet" href="{prof}{ESTILO}?v={VERSAO_CSS}">',
         # SVG primeiro: é o que os navegadores atuais preferem, e é o único que
         # troca de cor sozinho quando a aba está no tema escuro. O PNG fica de
         # reserva para quem não lê SVG, e o apple-touch-icon é o da tela do iPhone.
@@ -348,7 +355,14 @@ def escrever(caminho, conteudo):
 
 
 def gerar():
+    global VERSAO_CSS
     cfg = ler_config()
+
+    # Impressão digital do CSS. Vai no `?v=` do <link> para o navegador não
+    # continuar usando a folha antiga depois de uma mudança de visual.
+    folha = TEMA / ESTILO
+    VERSAO_CSS = (hashlib.md5(folha.read_bytes()).hexdigest()[:8]
+                  if folha.exists() else "0")
     avisos = []
     textos = carregar_textos(cfg, avisos)
 
