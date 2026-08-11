@@ -45,10 +45,11 @@
 :root {
   /* A MESA e a FOLHA.
      Antes o fundo e a coluna de texto eram a mesma superfície branca, e nada
-     dizia onde começava a leitura. Agora a página é a mesa — com cor e uma
-     textura de pontos — e o texto vive numa folha branca pousada em cima. */
-  --mesa:   #e9eff6;      /* azul pastel; é o que aparece nas laterais */
-  --pontos: #cfdcea;      /* a textura da mesa, quase imperceptível de perto */
+     dizia onde começava a leitura. Agora a página é a mesa — com duas manchas
+     de cor, uma fria e uma quente — e o texto vive numa folha pousada em cima. */
+  --mesa:      #eef2f7;   /* a base da mesa */
+  --mesa-azul: #d8e6f5;   /* mancha fria, no alto à esquerda */
+  --mesa-verm: #f7e2de;   /* mancha quente, embaixo à direita */
 
   --papel:  #ffffff;      /* a folha, onde se lê */
   --tinta:  #0f172a;      /* slate-900: preto azulado, não preto puro */
@@ -82,8 +83,9 @@
    ───────────────────────────────────────────────────────────────────────── */
 @media (prefers-color-scheme: dark) {
   :root:not([data-tema="claro"]) {
-    --mesa:   #070c14;
-    --pontos: #16233a;
+    --mesa:      #080d16;
+    --mesa-azul: #12233d;
+    --mesa-verm: #2b1719;
     --papel:  #0f1724;
     --tinta:  #e2e8f0;
     --suave:  #94a3b8;
@@ -97,8 +99,9 @@
   }
 }
 :root[data-tema="escuro"] {
-  --mesa:   #070c14;
-  --pontos: #16233a;
+  --mesa:      #080d16;
+  --mesa-azul: #12233d;
+  --mesa-verm: #2b1719;
   --papel:  #0f1724;
   --tinta:  #e2e8f0;
   --suave:  #94a3b8;
@@ -117,11 +120,16 @@ html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
   color: var(--tinta);
-  /* A MESA: cor + uma trama de pontos a cada 24px. De perto quase não se vê;
-     é o suficiente para o olho saber que ali não é a folha. */
+  /* A MESA: duas manchas de luz muito abertas — a fria no alto à esquerda, a
+     quente embaixo à direita — sobre uma base neutra. Sem trama e sem repetição:
+     padrão que se repete vira papel de parede, e papel de parede compete com o
+     texto. Aqui a cor só varia devagar, do jeito que uma superfície varia.
+     `fixed` faz a mesa ficar parada enquanto a folha rola por cima dela. */
   background-color: var(--mesa);
-  background-image: radial-gradient(var(--pontos) 1px, transparent 1px);
-  background-size: 24px 24px;
+  background-image:
+    radial-gradient(1100px 620px at 12% -5%,  var(--mesa-azul) 0%, transparent 62%),
+    radial-gradient(950px 640px at 92% 108%, var(--mesa-verm) 0%, transparent 58%);
+  background-repeat: no-repeat;
   background-attachment: fixed;
   font-family: var(--serif);
   font-size: clamp(1.06rem, 1rem + .35vw, 1.2rem);
