@@ -43,7 +43,14 @@
    o pastel de verdade, usada só como fundo e borda, onde ninguém precisa ler.
    ───────────────────────────────────────────────────────────────────────── */
 :root {
-  --papel:  #ffffff;
+  /* A MESA e a FOLHA.
+     Antes o fundo e a coluna de texto eram a mesma superfície branca, e nada
+     dizia onde começava a leitura. Agora a página é a mesa — com cor e uma
+     textura de pontos — e o texto vive numa folha branca pousada em cima. */
+  --mesa:   #e9eff6;      /* azul pastel; é o que aparece nas laterais */
+  --pontos: #cfdcea;      /* a textura da mesa, quase imperceptível de perto */
+
+  --papel:  #ffffff;      /* a folha, onde se lê */
   --tinta:  #0f172a;      /* slate-900: preto azulado, não preto puro */
   --suave:  #64748b;      /* slate-500 */
   --linha:  #dbe6f0;      /* azul pastel bem baixo, no lugar do cinza */
@@ -61,19 +68,47 @@
 
   color-scheme: light dark;
 }
+/* ── Claro, escuro, ou o que o aparelho mandar ──────────────────────────────
+   Três estados, e a ordem importa:
+
+   1. `:root` sozinho    o tema claro, que é o padrão
+   2. `@media` + `:not([data-tema="claro"])`   segue o aparelho, MAS respeita
+      quem escolheu claro na mão — sem o `:not`, a escolha do leitor seria
+      atropelada pelo sistema toda vez
+   3. `[data-tema="escuro"]`   a escolha explícita, que vence tudo
+
+   Nenhuma cor pode ter sua ÚNICA definição dentro de um bloco de tema: se o
+   escuro define uma variável que o claro não tem, ela some no claro.
+   ───────────────────────────────────────────────────────────────────────── */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --papel:  #0b1220;
+  :root:not([data-tema="claro"]) {
+    --mesa:   #070c14;
+    --pontos: #16233a;
+    --papel:  #0f1724;
     --tinta:  #e2e8f0;
     --suave:  #94a3b8;
     --linha:  #22344a;
-    --realce: #101d2e;
-    /* No escuro os pastéis invertem: sobem de tom, senão somem no fundo. */
+    --realce: #16243a;
     --azul:       #9dc4e4;
     --azul-claro: #14263a;
     --vermelho:       #e8a9a4;
     --vermelho-claro: #2c1d1c;
+    color-scheme: dark;
   }
+}
+:root[data-tema="escuro"] {
+  --mesa:   #070c14;
+  --pontos: #16233a;
+  --papel:  #0f1724;
+  --tinta:  #e2e8f0;
+  --suave:  #94a3b8;
+  --linha:  #22344a;
+  --realce: #16243a;
+  --azul:       #9dc4e4;
+  --azul-claro: #14263a;
+  --vermelho:       #e8a9a4;
+  --vermelho-claro: #2c1d1c;
+  color-scheme: dark;
 }
 
 *,*::before,*::after { box-sizing: border-box; }
@@ -81,8 +116,13 @@ html { -webkit-text-size-adjust: 100%; }
 
 body {
   margin: 0;
-  background: var(--papel);
   color: var(--tinta);
+  /* A MESA: cor + uma trama de pontos a cada 24px. De perto quase não se vê;
+     é o suficiente para o olho saber que ali não é a folha. */
+  background-color: var(--mesa);
+  background-image: radial-gradient(var(--pontos) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-attachment: fixed;
   font-family: var(--serif);
   font-size: clamp(1.06rem, 1rem + .35vw, 1.2rem);
   line-height: 1.75;
@@ -104,9 +144,9 @@ a { color: inherit; text-decoration: none; }
 
 /* ── Topo: uma linha, e só ──────────────────────────────────────────────── */
 .topo {
-  display: flex; align-items: center; gap: .6rem 2rem; flex-wrap: wrap;
-  max-width: 44rem; width: 100%; margin: 0 auto;
-  padding: 2.2rem 1.5rem 1.4rem;
+  display: flex; align-items: center; gap: .6rem 1.2rem; flex-wrap: wrap;
+  max-width: 46rem; width: 100%; margin: 0 auto;
+  padding: 1.6rem 1.5rem 1.2rem;
 }
 .marca {
   display: inline-flex; align-items: center; gap: .55rem;
@@ -122,15 +162,50 @@ a { color: inherit; text-decoration: none; }
 .topo nav a { color: var(--suave); }
 .topo nav a:hover { color: var(--azul); }
 
+/* ── Seletor de tema ────────────────────────────────────────────────────────
+   Três estados no mesmo botão: claro → escuro → seguir o aparelho. O terceiro
+   existe porque quem põe o celular em escuro à noite quer o site junto, sem
+   ter de vir aqui trocar duas vezes por dia.
+   Sem JS o botão não aparece — não vale mostrar um controle que não controla. */
+.tema {
+  display: none;
+  align-items: center; justify-content: center;
+  width: 2rem; height: 2rem; padding: 0;
+  background: none; border: 1px solid var(--linha); border-radius: 50%;
+  color: var(--suave); cursor: pointer;
+  transition: color .2s, border-color .2s, background .2s;
+}
+html.js .tema { display: inline-flex; }
+.tema:hover { color: var(--azul); border-color: var(--azul); background: var(--papel); }
+.tema svg { width: 1.05rem; height: 1.05rem; }
+/* mostra só o ícone do estado atual */
+.tema .i-sol, .tema .i-lua, .tema .i-auto { display: none; }
+:root[data-tema="claro"]  .tema .i-sol  { display: block; }
+:root[data-tema="escuro"] .tema .i-lua  { display: block; }
+:root:not([data-tema])    .tema .i-auto { display: block; }
+
+/* ── A FOLHA ────────────────────────────────────────────────────────────────
+   O texto vive aqui dentro, em branco, sobre a mesa. A sombra é baixa de
+   propósito: papel pousado não levita. */
 main {
-  flex: 1; max-width: 44rem; width: 100%; margin: 0 auto;
-  padding: 2.5rem 1.5rem 6rem;
+  flex: 1;
+  max-width: 46rem; width: calc(100% - 2rem);
+  margin: 0 auto 3rem;
+  padding: 3rem clamp(1.4rem, 5vw, 3.5rem) 5rem;
+  background: var(--papel);
+  border: 1px solid var(--linha);
+  border-radius: 3px;
+  box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 8px 24px -12px rgba(15,23,42,.10);
+}
+@media (max-width: 40rem) {
+  /* No celular a folha ocupa a tela toda: margem lateral ali é espaço de
+     leitura perdido, e a mesa não tem o que mostrar. */
+  main { width: 100%; border-left: 0; border-right: 0; border-radius: 0; margin-bottom: 0; }
 }
 
 .rodape {
-  border-top: 1px solid var(--linha);
-  max-width: 44rem; width: 100%; margin: 0 auto;
-  padding: 1.8rem 1.5rem 3.5rem;
+  max-width: 46rem; width: 100%; margin: 0 auto;
+  padding: .5rem 1.5rem 3rem;
   font-family: var(--sans); font-size: .78rem; color: var(--suave); line-height: 1.7;
 }
 .rodape p { margin: .15rem 0; }

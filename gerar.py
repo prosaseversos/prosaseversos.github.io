@@ -314,16 +314,27 @@ def pagina(cfg, *, titulo, descricao, caminho, conteudo, jsonld=None, capa=False
     menu = " ".join(
         f'<a href="{prof}{s["pasta"]}/">{e(s["titulo"])}</a>' for s in cfg["secoes"])
 
+    # ⚠️ Este script é inline e vem ANTES do CSS de propósito. Se o tema fosse
+    # aplicado depois, a página pintaria branca e só então viraria escura — o
+    # flash que faz quem lê à noite fechar a aba. Aqui o atributo já está no
+    # <html> quando a primeira regra de cor é avaliada.
+    antes = ('<script>(function(){var h=document.documentElement;'
+             'h.className+=" js";try{var t=localStorage.getItem("pv_tema");'
+             'if(t)h.setAttribute("data-tema",t);}catch(e){}})();</script>')
+
     return f"""<!doctype html>
 <html lang="{e(cfg['idioma'])}">
 <head>
-{chr(10).join(cabeca)}
-</head>
+<meta charset="utf-8">
+{antes}
+{chr(10).join(cabeca[1:])}
+</head>""" + f"""
 <body>
 <a class="pular" href="#conteudo">Ir para o conteúdo</a>
 <header class="topo">
   <a class="marca" href="{prof}">{marca.svg_inline()}<span>{e(cfg['nome'])}</span></a>
   <nav>{menu}</nav>
+  {BOTAO_TEMA}
 </header>
 <main id="conteudo">
 {conteudo}
@@ -332,9 +343,57 @@ def pagina(cfg, *, titulo, descricao, caminho, conteudo, jsonld=None, capa=False
   <p>© {date.today().year} {e(cfg['autor'])}. Todos os textos são de autoria própria.</p>
   <p><a href="{prof}feed.xml">Assinar por RSS</a></p>
 </footer>
+{SCRIPT_TEMA}
 </body>
 </html>
 """
+
+
+# ── Seletor de tema ──────────────────────────────────────────────────────────
+# Três estados no mesmo botão: claro → escuro → seguir o aparelho. O ícone diz
+# em qual deles está. Os desenhos são traço puro, na mesma gramática da marca.
+BOTAO_TEMA = (
+    '<button class="tema" id="tema" type="button" aria-live="polite"'
+    ' title="Trocar entre claro, escuro e automático">'
+    '<svg class="i-sol" viewBox="0 0 24 24" fill="none" stroke="currentColor"'
+    ' stroke-width="1.6" stroke-linecap="round" aria-hidden="true">'
+    '<circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.2M12 19.2v2.2'
+    'M2.6 12h2.2M19.2 12h2.2M5 5l1.6 1.6M17.4 17.4L19 19M19 5l-1.6 1.6'
+    'M6.6 17.4L5 19"/></svg>'
+    '<svg class="i-lua" viewBox="0 0 24 24" fill="none" stroke="currentColor"'
+    ' stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+    '<path d="M20 14.4A8.4 8.4 0 0 1 9.6 4 8.4 8.4 0 1 0 20 14.4Z"/></svg>'
+    '<svg class="i-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor"'
+    ' stroke-width="1.6" stroke-linecap="round" aria-hidden="true">'
+    '<circle cx="12" cy="12" r="8.4"/><path d="M12 3.6v16.8" />'
+    '<path d="M12 3.6a8.4 8.4 0 0 1 0 16.8" fill="currentColor" stroke="none"/></svg>'
+    '</button>')
+
+SCRIPT_TEMA = """<script>
+(function () {
+  var b = document.getElementById('tema');
+  if (!b) return;
+  var h = document.documentElement;
+  // A ordem do rodízio: claro -> escuro -> segue o aparelho -> claro...
+  var ciclo = {claro: 'escuro', escuro: '', '': 'claro'};
+  var nome  = {claro: 'modo claro', escuro: 'modo escuro', '': 'seguindo o aparelho'};
+  function rotular() {
+    var atual = h.getAttribute('data-tema') || '';
+    b.setAttribute('aria-label', 'Tema: ' + nome[atual] + '. Clique para trocar.');
+  }
+  b.addEventListener('click', function () {
+    var proximo = ciclo[h.getAttribute('data-tema') || ''];
+    if (proximo) { h.setAttribute('data-tema', proximo); }
+    else { h.removeAttribute('data-tema'); }
+    try {
+      if (proximo) localStorage.setItem('pv_tema', proximo);
+      else localStorage.removeItem('pv_tema');
+    } catch (e) {}
+    rotular();
+  });
+  rotular();
+})();
+</script>"""
 
 
 def cartao(t, prefixo=""):
