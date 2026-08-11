@@ -223,7 +223,7 @@ def render(corpo, verso):
             out.append(f'<p class="{classe}"><span class="rotulo">{inline(rotulo)}</span>'
                        + "<br>\n".join(recuo(l) for l in linhas) + "</p>")
         elif all(re.fullmatch(r"[-*_]{3,}", l.strip()) for l in linhas):
-            out.append("<hr>")
+            out.append(marca.filete_estrofe())
         elif linhas[0].startswith("#"):
             n = min(len(linhas[0]) - len(linhas[0].lstrip("#")), 4) + 1
             out.append(f"<h{n}>{inline(linhas[0].lstrip('# ').strip())}</h{n}>")
@@ -474,6 +474,7 @@ def gerar():
                  f'<h1>{html.escape(t["titulo"])}</h1>'
                  f'<time datetime="{t["data"].isoformat()}">{por_extenso(t["data"])}</time>'
                  f'{render(t["corpo"], s["verso"])}'
+                 f'{marca.filete_fim()}'
                  f'</article>'
                  f'<nav class="vizinhos">{"".join(vizinhos)}</nav>'
                  f'<p class="volta"><a href="../">Todos os textos de '

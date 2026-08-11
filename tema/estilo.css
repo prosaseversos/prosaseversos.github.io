@@ -281,8 +281,90 @@ strong { font-weight: 600; }
 .volta { font-family: var(--sans); font-size: .8rem; color: var(--suave); }
 .volta a:hover { color: var(--azul); }
 
+/* ════════════════════════════════════════════════════════════════════════════
+   GESTO — o que dá vida sem virar enfeite
+
+   Quatro coisas, cada uma com função:
+     1. capitular   marca onde o texto começa
+     2. ornamentos  marcam pausa e fim — o livro faz isso há séculos
+     3. traço que cresce   diz onde o clique vai cair
+     4. entrada suave      o texto chega em vez de aparecer de repente
+
+   Tudo desligado em `prefers-reduced-motion`: para quem tem enxaqueca ou
+   labirintite, movimento na tela não é charme, é sintoma.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Capitular ───────────────────────────────────────────────────────────
+   Só na prosa, e só no primeiro parágrafo. Em poema seria intromissão: a
+   primeira letra do verso é do poeta. */
+.prosa > p:first-of-type::first-letter {
+  float: left;
+  font-family: var(--titulo);
+  font-weight: 600;
+  font-variation-settings: 'opsz' 144;
+  font-size: 3.4em;
+  line-height: .82;
+  padding: .06em .12em 0 0;
+  color: var(--azul);
+}
+/* a capitular não entra no resumo da home — lá o texto é trecho, não abertura */
+.destaque .prosa > p:first-of-type::first-letter { float: none; font-size: inherit;
+  line-height: inherit; padding: 0; color: inherit; font-variation-settings: 'opsz' 14; }
+
+/* ── 2. Ornamentos ─────────────────────────────────────────────────────────── */
+.ornamento { display: block; margin: 0 auto; overflow: visible; }
+.ornamento .tr { stroke: var(--linha); stroke-width: 1; }
+.ornamento .lo { fill: var(--azul); }
+.ornamento.fim { width: 120px; height: 12px; margin: 3.5rem auto 0; }
+.ornamento.entre { width: 44px; height: 8px; margin: 2.6rem auto; }
+.ornamento.entre .p1 { fill: var(--azul); opacity: .45; }
+.ornamento.entre .p2 { fill: var(--azul); opacity: .7; }
+.ornamento.entre .p3 { fill: var(--vermelho); }
+
+/* ── 3. O traço que cresce sob o link ───────────────────────────────────────
+   Feito com background, não com border: assim ele cresce da esquerda em vez de
+   piscar inteiro, e acompanha o texto em duas linhas. */
+.lista a, .cartao > a, .tituloDestaque a {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0% 1px;
+  transition: background-size .32s cubic-bezier(.2,.7,.3,1), color .2s;
+}
+.lista a:hover, .cartao > a:hover, .tituloDestaque a:hover { background-size: 100% 1px; }
+
+.topo nav a {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat; background-position: 0 100%;
+  background-size: 0% 1px; transition: background-size .28s ease, color .2s;
+}
+.topo nav a:hover { background-size: 100% 1px; }
+
+/* ── 4. Entrada ─────────────────────────────────────────────────────────────
+   Curta e curta mesmo: 380ms. O suficiente para o olho perceber que a página
+   se montou, não para fazer esperar. */
+@keyframes surgir {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.destaque, .lista > li, .lista > .cartao, article, .bloco {
+  animation: surgir .38s cubic-bezier(.2,.7,.3,1) both;
+}
+/* escalonado: os itens da lista entram um atrás do outro, como quem vira página */
+.lista > *:nth-child(1) { animation-delay: .02s }
+.lista > *:nth-child(2) { animation-delay: .06s }
+.lista > *:nth-child(3) { animation-delay: .10s }
+.lista > *:nth-child(4) { animation-delay: .14s }
+.lista > *:nth-child(5) { animation-delay: .18s }
+.lista > *:nth-child(6) { animation-delay: .22s }
+.lista > *:nth-child(n+7) { animation-delay: .26s }
+
+/* a linha da lista acende de leve ao passar o mouse */
+.lista li, .cartao { transition: border-color .2s; }
+.lista li:hover, .cartao:hover { border-bottom-color: var(--azul); }
+
 @media print {
-  .topo nav, .vizinhos, .volta, .rodape, .pular { display: none; }
+  .ornamento, .topo nav, .vizinhos, .volta, .rodape, .pular { display: none; }
   body { background: #fff; color: #000; font-size: 11.5pt; }
   main { padding: 0; }
   .estrofe { page-break-inside: avoid; }
@@ -290,5 +372,11 @@ strong { font-weight: 600; }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  * { transition: none !important; }
+  /* Movimento na tela, para quem tem enxaqueca ou labirintite, não é charme:
+     é sintoma. Aqui tudo para — inclusive a entrada, que de outro modo
+     continuaria deslizando. */
+  *, *::before, *::after {
+    transition: none !important;
+    animation: none !important;
+  }
 }

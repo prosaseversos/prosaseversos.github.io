@@ -80,6 +80,33 @@ def svg_favicon():
             f'  </style>\n{_barras_svg(classes=True)}\n</svg>\n')
 
 
+# ── Ornamentos ───────────────────────────────────────────────────────────────
+# Desenhos pequenos, para o texto ter começo, meio e fim visíveis. Vêm da mesma
+# gramática da marca — traço fino, canto arredondado, as duas cores — para
+# parecerem da mesma casa e não adesivos colados por cima.
+
+def filete_fim():
+    """Fecha o texto. Dois traços e um losango: a marca de fim que os livros usam
+    há séculos, aqui com as duas cores do site."""
+    return ('<svg class="ornamento fim" viewBox="0 0 120 12" aria-hidden="true" '
+            'focusable="false">'
+            '<line class="tr" x1="4" y1="6" x2="46" y2="6"/>'
+            '<path class="lo azul" d="M60 1.5 66.5 6 60 10.5 53.5 6Z"/>'
+            '<line class="tr" x1="74" y1="6" x2="116" y2="6"/>'
+            '</svg>')
+
+
+def filete_estrofe():
+    """Entre blocos longos. Três pontos que crescem — o mesmo gesto do símbolo:
+    o que se adensa da esquerda para a direita."""
+    return ('<svg class="ornamento entre" viewBox="0 0 44 8" aria-hidden="true" '
+            'focusable="false">'
+            '<circle class="p1" cx="8" cy="4" r="1.6"/>'
+            '<circle class="p2" cx="22" cy="4" r="2.2"/>'
+            '<circle class="p3" cx="37" cy="4" r="2.8"/>'
+            '</svg>')
+
+
 # ── Rasterizador ─────────────────────────────────────────────────────────────
 def _cobertura(lado, amostras=4, barras=None):
     """Quanto de cada pixel a forma cobre, de 0 a 1.
