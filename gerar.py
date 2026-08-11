@@ -60,7 +60,7 @@ VARIACOES = {
           "de": "as tendências de 2026: escuro por padrão"},
 }
 ESTILO = "estilo.css"     # trocados quando se gera uma prévia
-HOME = "lista"
+HOME = "capa"
 NOINDEX = False
 
 
@@ -373,13 +373,24 @@ def gerar():
         # quem chega já está lendo, em vez de escolher numa lista.
         t = textos[0]
         s = t["secao"]
+        blocos = re.split(r"\n\s*\n", t["corpo"].strip())
+
+        # Poema cabe inteiro na home; crônica de trinta parágrafos, não — ela
+        # empurraria o resto do site para fora da tela e a home viraria o texto.
+        # Verso vai inteiro até 8 estrofes; prosa mostra a abertura e convida.
+        limite = 8 if s["verso"] else 2
+        cortado = len(blocos) > limite
+        trecho = "\n\n".join(blocos[:limite]) if cortado else t["corpo"]
+
         corpo_home += (
             f'<article class="destaque {"verso" if s["verso"] else "prosa"}">'
             f'<span class="etiqueta">{e(s["titulo"])}</span>'
             f'<h2 class="tituloDestaque"><a href="{s["pasta"]}/{t["slug"]}/">{e(t["titulo"])}</a></h2>'
             f'<time datetime="{t["data"].isoformat()}">{por_extenso(t["data"])}</time>'
-            f'{render(t["corpo"], s["verso"])}'
-            f'</article>')
+            f'{render(trecho, s["verso"])}'
+            + (f'<p class="continuar"><a href="{s["pasta"]}/{t["slug"]}/">'
+               f'continuar lendo</a></p>' if cortado else "")
+            + '</article>')
         if len(textos) > 1:
             corpo_home += ('<h2>Antes disso</h2><ul class="lista">'
                            + "\n".join(cartao(x) for x in textos[1:13]) + "</ul>")
@@ -498,6 +509,14 @@ def gerar():
     css = TEMA / ESTILO
     if css.exists():
         shutil.copy(css, SAIDA / ESTILO)
+
+    # A fonte é servida daqui, não de CDN: o site não pode depender de servidor
+    # de terceiro para ter cara — e sem a fonte, o desenho todo muda.
+    fontes = TEMA / "fontes"
+    if fontes.is_dir():
+        (SAIDA / "fontes").mkdir(parents=True, exist_ok=True)
+        for f in fontes.glob("*.woff2"):
+            shutil.copy(f, SAIDA / "fontes" / f.name)
 
     # Ícones. O `favicon.ico` existe porque o navegador o pede na raiz por conta
     # própria, sem olhar as tags do <head> — e 404 repetido polui log e é feio.
