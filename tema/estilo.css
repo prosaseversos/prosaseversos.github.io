@@ -30,12 +30,29 @@
                  U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+/* ── Cores ───────────────────────────────────────────────────────────────────
+   Vermelho e azul pastéis, pedidos. Onde eles entram e onde não entram:
+
+   ENTRAM  em link, detalhe, etiqueta, refrão, borda e fundo de bloco — tudo que
+           é sinal, não leitura.
+   NÃO ENTRAM  no corpo do texto. Pastel é claro por definição, e texto claro
+           sobre fundo claro não se lê: o poema continua em tinta escura.
+
+   Os dois têm duas versões: a `-forte` é o pastel puxado ao ponto em que ainda
+   passa em contraste 4.5:1 (o mínimo legível), usada onde vira texto; a clara é
+   o pastel de verdade, usada só como fundo e borda, onde ninguém precisa ler.
+   ───────────────────────────────────────────────────────────────────────── */
 :root {
   --papel:  #ffffff;
   --tinta:  #0f172a;      /* slate-900: preto azulado, não preto puro */
   --suave:  #64748b;      /* slate-500 */
-  --linha:  #e2e8f0;      /* slate-200 */
-  --realce: #f8fafc;      /* slate-50 */
+  --linha:  #dbe6f0;      /* azul pastel bem baixo, no lugar do cinza */
+  --realce: #f4f8fc;      /* fundo de bloco, azul quase branco */
+
+  --azul:       #4a7fa8;  /* azul pastel, escurecido até dar contraste de leitura */
+  --azul-claro: #e8f0f7;
+  --vermelho:       #c2706b;  /* idem, no vermelho */
+  --vermelho-claro: #fbeeec;
 
   --titulo: 'Fraunces', 'Iowan Old Style', Palatino, Georgia, serif;
   --serif:  'Fraunces', 'Iowan Old Style', Palatino, Georgia, serif;
@@ -49,8 +66,13 @@
     --papel:  #0b1220;
     --tinta:  #e2e8f0;
     --suave:  #94a3b8;
-    --linha:  #1e293b;
-    --realce: #111c2e;
+    --linha:  #22344a;
+    --realce: #101d2e;
+    /* No escuro os pastéis invertem: sobem de tom, senão somem no fundo. */
+    --azul:       #9dc4e4;
+    --azul-claro: #14263a;
+    --vermelho:       #e8a9a4;
+    --vermelho-claro: #2c1d1c;
   }
 }
 
@@ -71,7 +93,7 @@ body {
 }
 
 a { color: inherit; text-decoration: none; }
-:focus-visible { outline: 2px solid var(--tinta); outline-offset: 3px; border-radius: 2px; }
+:focus-visible { outline: 2px solid var(--azul); outline-offset: 3px; border-radius: 2px; }
 
 .pular { position: absolute; left: -9999px; }
 .pular:focus {
@@ -92,13 +114,13 @@ a { color: inherit; text-decoration: none; }
   font-variation-settings: 'opsz' 24;
   letter-spacing: -0.01em; text-transform: none; color: var(--tinta);
 }
-.marca .simbolo { width: 1.15em; height: 1.15em; flex: none; color: var(--tinta); }
+.marca .simbolo { width: 1.2em; height: 1.2em; flex: none; }
 .topo nav {
   margin-left: auto; display: flex; gap: 1.5rem;
   font-family: var(--sans); font-size: .82rem;
 }
 .topo nav a { color: var(--suave); }
-.topo nav a:hover { color: var(--tinta); }
+.topo nav a:hover { color: var(--azul); }
 
 main {
   flex: 1; max-width: 44rem; width: 100%; margin: 0 auto;
@@ -113,7 +135,7 @@ main {
 }
 .rodape p { margin: .15rem 0; }
 .rodape a { border-bottom: 1px solid var(--linha); }
-.rodape a:hover { border-bottom-color: var(--suave); }
+.rodape a:hover { color: var(--azul); border-bottom-color: var(--azul); }
 
 /* ── Capa ───────────────────────────────────────────────────────────────── */
 .capa {
@@ -137,7 +159,7 @@ h1 {
 }
 h2 {
   font-family: var(--sans); font-size: .74rem; font-weight: 600;
-  letter-spacing: .1em; text-transform: uppercase; color: var(--suave);
+  letter-spacing: .1em; text-transform: uppercase; color: var(--azul);
   margin: 3.4rem 0 1.2rem;
 }
 h3, h4, h5 {
@@ -150,7 +172,7 @@ h3, h4, h5 {
 .destaque { margin-bottom: 4rem; padding-bottom: 3rem; border-bottom: 1px solid var(--linha); }
 .etiqueta {
   display: inline-block; font-family: var(--sans); font-size: .7rem; font-weight: 600;
-  letter-spacing: .11em; text-transform: uppercase; color: var(--suave);
+  letter-spacing: .11em; text-transform: uppercase; color: var(--vermelho);
   margin-bottom: .8rem;
 }
 .tituloDestaque {
@@ -159,10 +181,17 @@ h3, h4, h5 {
   font-variation-settings: 'opsz' 80;
   line-height: 1.1; letter-spacing: -0.022em; margin: 0 0 .3rem; text-wrap: balance;
 }
+.tituloDestaque a:hover { color: var(--azul); }
 .destaque > time {
   display: block; font-family: var(--sans); font-size: .78rem;
   color: var(--suave); margin-bottom: 2.2rem;
 }
+
+/* O símbolo é feito de duas colunas: à esquerda a prosa (linhas iguais), à
+   direita o verso (linhas desiguais). Cada uma ganha uma das duas cores — é o
+   lugar onde vermelho e azul dizem alguma coisa em vez de só enfeitar. */
+.marca .simbolo .prosa-barra { color: var(--azul); }
+.marca .simbolo .verso-barra { color: var(--vermelho); }
 .continuar {
   font-family: var(--sans); font-size: .84rem; margin: 1.6rem 0 0;
 }
@@ -170,7 +199,7 @@ h3, h4, h5 {
   color: var(--suave); border-bottom: 1px solid var(--linha); padding-bottom: .1rem;
 }
 .continuar a::after { content: " →"; }
-.continuar a:hover { color: var(--tinta); border-bottom-color: var(--suave); }
+.continuar a:hover { color: var(--azul); border-bottom-color: var(--azul); }
 
 /* ── Índices: linha e ar, sem card e sem moldura ────────────────────────── */
 .lista { list-style: none; margin: 0; padding: 0; }
@@ -185,7 +214,7 @@ h3, h4, h5 {
   font-variation-settings: 'opsz' 40;
   line-height: 1.25; letter-spacing: -0.012em; text-wrap: balance;
 }
-.lista a:hover, .cartao > a:hover { color: var(--suave); }
+.lista a:hover, .cartao > a:hover { color: var(--azul); }
 .lista .meta, .cartao time {
   display: block; margin-top: .28rem;
   font-family: var(--sans); font-size: .75rem; color: var(--suave);
@@ -215,21 +244,24 @@ article p { text-wrap: pretty; }
 }
 .refrao {
   font-style: italic;
-  border-left: 2px solid var(--linha); padding-left: 1.2rem; margin-left: -1.2rem;
+  border-left: 3px solid var(--vermelho);
+  background: var(--vermelho-claro);
+  padding: .9rem 1.2rem; margin-left: -1.2rem; border-radius: 0 6px 6px 0;
 }
 .rotulo {
   display: block; font-family: var(--sans); font-style: normal;
   font-size: .68rem; font-weight: 600; letter-spacing: .11em;
-  text-transform: uppercase; color: var(--suave); margin-bottom: .5em;
+  text-transform: uppercase; color: var(--vermelho); margin-bottom: .5em;
 }
 
 blockquote {
-  margin: 2.2rem 0; padding-left: 1.3rem;
-  border-left: 2px solid var(--linha); color: var(--suave); font-style: italic;
+  margin: 2.2rem 0; padding: .9rem 1.3rem;
+  border-left: 3px solid var(--azul); background: var(--azul-claro);
+  color: var(--tinta); font-style: italic; border-radius: 0 6px 6px 0;
 }
 blockquote p { margin: 0; }
 
-hr { border: 0; margin: 3rem 0; border-top: 1px solid var(--linha); }
+hr { border: 0; margin: 3rem auto; width: 3.5rem; border-top: 2px solid var(--vermelho); }
 strong { font-weight: 600; }
 
 /* ── Fim do texto ───────────────────────────────────────────────────────── */
@@ -239,10 +271,10 @@ strong { font-weight: 600; }
   font-family: var(--sans); font-size: .84rem; line-height: 1.4;
 }
 .vizinhos a { color: var(--suave); max-width: 47%; }
-.vizinhos a:hover { color: var(--tinta); }
+.vizinhos a:hover { color: var(--azul); }
 .vizinhos .prox { margin-left: auto; text-align: right; }
 .volta { font-family: var(--sans); font-size: .8rem; color: var(--suave); }
-.volta a:hover { color: var(--tinta); }
+.volta a:hover { color: var(--azul); }
 
 @media print {
   .topo nav, .vizinhos, .volta, .rodape, .pular { display: none; }

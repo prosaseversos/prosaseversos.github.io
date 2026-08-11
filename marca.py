@@ -34,36 +34,54 @@ FORMA = [
     (18, 8.5,  11, 2.6, 1.3), (18, 14.7, 6,  2.6, 1.3), (18, 20.9, 9,  2.6, 1.3),
 ]
 
-AZUL_CLARO = "#1f5c9e"   # sobre papel claro
-AZUL_ESCURO = "#7fb2e8"  # sobre fundo escuro: o mesmo azul sumiria
-PAPEL = "#f6f8fa"
+# As mesmas duas cores do site (ver `estilo.css`): a prosa em azul, o verso em
+# vermelho. No ícone da aba elas aparecem juntas — é o que o distingue de
+# qualquer outro quadradinho na barra do navegador.
+AZUL_CLARO = "#4a7fa8"      # prosa, sobre fundo claro
+AZUL_ESCURO = "#9dc4e4"     # prosa, sobre fundo escuro
+VERM_CLARO = "#c2706b"      # verso, sobre fundo claro
+VERM_ESCURO = "#e8a9a4"     # verso, sobre fundo escuro
+PAPEL = "#ffffff"
 
 
-def _barras_svg(indent="  "):
-    return "\n".join(
-        f'{indent}<rect x="{x:g}" y="{y:g}" width="{w:g}" height="{h:g}" rx="{r:g}"/>'
-        for x, y, w, h, r in FORMA)
+def _barras_svg(indent="  ", classes=False):
+    """`classes=True` marca cada coluna, para o CSS poder pintar a prosa de uma
+    cor e o verso de outra. Sem isso as seis barras saem todas iguais."""
+    linhas = []
+    for i, (x, y, w, h, r) in enumerate(FORMA):
+        cls = ""
+        if classes:
+            cls = f' class="{"prosa-barra" if x < 16 else "verso-barra"}" fill="currentColor"'
+        linhas.append(f'{indent}<rect{cls} x="{x:g}" y="{y:g}" '
+                      f'width="{w:g}" height="{h:g}" rx="{r:g}"/>')
+    return "\n".join(linhas)
 
 
 def svg_inline(classe="simbolo"):
     """Para o topo da página. Inline e com `currentColor`: sem requisição extra,
     e a cor acompanha o tema claro/escuro sozinha."""
     return (f'<svg class="{classe}" viewBox="0 0 32 32" fill="currentColor" '
-            f'aria-hidden="true" focusable="false">\n{_barras_svg()}\n</svg>')
+            f'aria-hidden="true" focusable="false">\n'
+            f'{_barras_svg(classes=True)}\n</svg>')
 
 
 def svg_favicon():
-    """Ícone da aba. O `@media` dentro do próprio SVG é respeitado pelo navegador
-    no favicon — é assim que o ícone clareia sozinho quando a aba está no escuro."""
+    """Ícone da aba, nas duas cores. O `@media` dentro do próprio SVG é respeitado
+    pelo navegador no favicon — é assim que o ícone se ajusta sozinho quando a aba
+    está no escuro."""
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">\n'
             f'  <style>\n'
-            f'    rect {{ fill: {AZUL_CLARO}; }}\n'
-            f'    @media (prefers-color-scheme: dark) {{ rect {{ fill: {AZUL_ESCURO}; }} }}\n'
-            f'  </style>\n{_barras_svg()}\n</svg>\n')
+            f'    .prosa-barra {{ fill: {AZUL_CLARO}; }}\n'
+            f'    .verso-barra {{ fill: {VERM_CLARO}; }}\n'
+            f'    @media (prefers-color-scheme: dark) {{\n'
+            f'      .prosa-barra {{ fill: {AZUL_ESCURO}; }}\n'
+            f'      .verso-barra {{ fill: {VERM_ESCURO}; }}\n'
+            f'    }}\n'
+            f'  </style>\n{_barras_svg(classes=True)}\n</svg>\n')
 
 
 # ── Rasterizador ─────────────────────────────────────────────────────────────
-def _cobertura(lado, amostras=4):
+def _cobertura(lado, amostras=4, barras=None):
     """Quanto de cada pixel a forma cobre, de 0 a 1.
 
     Amostra `amostras`×`amostras` pontos por pixel e tira a média — é o que dá a
@@ -78,7 +96,7 @@ def _cobertura(lado, amostras=4):
     passo = 1.0 / amostras
     peso = 1.0 / (amostras * amostras)
 
-    for bx, by, bw, bh, br in FORMA:
+    for bx, by, bw, bh, br in (FORMA if barras is None else barras):
         x0, y0 = bx * escala, by * escala
         x1, y1 = (bx + bw) * escala, (by + bh) * escala
         r = br * escala
@@ -126,24 +144,44 @@ def _png(lado, dados_rgba):
             + bloco(b"IEND", b""))
 
 
-def png(lado, cor=AZUL_CLARO, fundo=None):
-    """`fundo=None` deixa transparente. Para o ícone do iOS passe uma cor: o
-    iPhone pinta de preto o que for transparente no apple-touch-icon."""
-    cr, cg, cb = _rgb(cor)
+def png(lado, escuro=False, fundo=None):
+    """Rasteriza o ícone nas DUAS cores: prosa em azul, verso em vermelho.
+
+    `fundo=None` deixa transparente. Para o ícone do iOS passe uma cor: o iPhone
+    pinta de preto o que for transparente no apple-touch-icon.
+    """
+    prosa = [b for b in FORMA if b[0] < 16]
+    verso = [b for b in FORMA if b[0] >= 16]
+    cor_p = _rgb(AZUL_ESCURO if escuro else AZUL_CLARO)
+    cor_v = _rgb(VERM_ESCURO if escuro else VERM_CLARO)
+    am = 4 if lado <= 64 else 3
+    cob_p = _cobertura(lado, amostras=am, barras=prosa)
+    cob_v = _cobertura(lado, amostras=am, barras=verso)
     fr, fg, fb = _rgb(fundo) if fundo else (0, 0, 0)
-    cob = _cobertura(lado, amostras=4 if lado <= 64 else 3)
 
     saida = bytearray(lado * lado * 4)
-    for i, a in enumerate(cob):
+    for i in range(lado * lado):
+        ap, av = cob_p[i], cob_v[i]
+        a = ap + av                      # as colunas não se tocam: soma é segura
+        if a <= 0:
+            if fundo:
+                j = i * 4
+                saida[j], saida[j+1], saida[j+2], saida[j+3] = fr, fg, fb, 255
+            continue
+        # cor média ponderada pela cobertura de cada coluna naquele pixel
+        cr = (cor_p[0] * ap + cor_v[0] * av) / a
+        cg = (cor_p[1] * ap + cor_v[1] * av) / a
+        cb = (cor_p[2] * ap + cor_v[2] * av) / a
+        a = min(1.0, a)
         j = i * 4
         if fundo:
-            saida[j] = round(fr + (cr - fr) * a)
-            saida[j + 1] = round(fg + (cg - fg) * a)
-            saida[j + 2] = round(fb + (cb - fb) * a)
-            saida[j + 3] = 255
+            saida[j]   = round(fr + (cr - fr) * a)
+            saida[j+1] = round(fg + (cg - fg) * a)
+            saida[j+2] = round(fb + (cb - fb) * a)
+            saida[j+3] = 255
         else:
-            saida[j], saida[j + 1], saida[j + 2] = cr, cg, cb
-            saida[j + 3] = round(255 * a)
+            saida[j], saida[j+1], saida[j+2] = round(cr), round(cg), round(cb)
+            saida[j+3] = round(255 * a)
     return _png(lado, bytes(saida))
 
 
