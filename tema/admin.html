@@ -144,26 +144,13 @@ textarea:focus{outline:0}
   text-transform:uppercase;color:var(--suave);margin:1.6rem 0 .7rem}
 .revisao h3:first-child{margin-top:0}
 
-table.versos{width:100%;border-collapse:collapse;font-size:.8rem}
-table.versos td{padding:.24rem .4rem;border-bottom:1px solid var(--linha);vertical-align:top}
-table.versos .n{color:var(--suave);text-align:right;width:2.4rem;font-variant-numeric:tabular-nums}
-table.versos .s{text-align:right;width:2.2rem;font-variant-numeric:tabular-nums}
-table.versos .r{width:2.6rem;font-weight:600;color:var(--acento)}
-table.versos .v{font-family:var(--serif);font-size:1.02em;color:var(--suave)}
-table.versos .v .fim{color:var(--tinta);font-weight:600}
-table.versos .dif{width:2rem;text-align:right;font-size:.72rem;color:var(--erro);
-  font-variant-numeric:tabular-nums}
-.destoa{color:var(--erro);font-weight:600}
-
-/* Rimas: as palavras agrupadas. É isto que responde "o que corrigir" — a letra
-   sozinha ("ABCB") não diz nada a quem está escrevendo. */
-.rimas{display:flex;flex-direction:column;gap:.4rem}
-.grupo{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
-.grupo .letra{font-weight:700;color:var(--acento);width:1.2rem;flex:none}
-.pal{font-family:var(--serif);font-size:.95rem;background:var(--realce);
-  padding:.1rem .45rem;border-radius:5px}
-.pal.solta{background:none;border:1px dashed var(--linha);color:var(--suave)}
-.grupo .qtd{font-size:.7rem;color:var(--suave);margin-left:.2rem}
+/* Passos e campo da chave da IA */
+.revisao ol.passos{color:var(--suave);font-size:.84rem;line-height:1.8;padding-left:1.2rem;
+  margin:.6rem 0}
+.revisao .linha{display:flex;gap:.5rem;margin:.9rem 0 .3rem}
+button.link{border:0;padding:0;font-size:inherit;color:var(--acento);
+  text-decoration:underline;text-underline-offset:.2em}
+button.link:hover{opacity:.75}
 
 .achado{border-left:2px solid var(--linha);padding:.5rem 0 .5rem .85rem;margin-bottom:.9rem}
 .achado .trecho{font-family:var(--mono);font-size:.8rem;background:var(--realce);
@@ -802,361 +789,217 @@ async function entrar(t) {
   }
 }
 
-/* ═══ REVISÃO ════════════════════════════════════════════════════════════════
-   Duas coisas diferentes, de propósito:
+/* ═══ REVISÃO POR IA ═════════════════════════════════════════════════════════
+   Um modelo lê o poema inteiro e aponta os erros, com a linha e a correção.
 
-   1. MÉTRICA E RIMA — regra pura, aqui no navegador. Rima e metrificação são
-      fonética: têm lei. Modelo de linguagem chuta e às vezes inventa uma rima
-      que não existe; regra erra sempre do mesmo jeito, e dá para conferir.
-   2. ORTOGRAFIA E GRAMÁTICA — LanguageTool, que é um corretor de verdade para
-      português. Não uso IA com chave aqui porque esta página é pública: chave
-      colocada neste arquivo estaria à vista de qualquer um.
+   POR QUE A CHAVE FICA COM VOCÊ
+     Esta página é pública: chave escrita aqui dentro estaria à vista de qualquer
+     um. Então ela não vem do site — você cola a sua uma vez e ela fica só neste
+     aparelho, exatamente como o token do GitHub. A Groq permite a chamada direta
+     do navegador; nada passa por servidor nenhum meu.
+
+   O MODELO
+     `openai/gpt-oss-120b`. Escolhido por teste, não por fama: revisando um poema
+     religioso do André, foi o único que pegou os erros de verdade ("Tú"→"Tu",
+     "De todos as"→"De todas as") e ao mesmo tempo NÃO mexeu no "em Ti" com
+     maiúscula — que ali é reverência, não erro. O llama-3.3-70b queria corrigir,
+     e teria estragado o texto; o qwen nem devolveu JSON válido.
+
+   O QUE IMPEDE A IA DE INVENTAR
+     Todo apontamento é conferido contra o texto: se o trecho que ela diz ter
+     encontrado não existe ali, ele é descartado e o painel diz quantos caíram.
+     Modelo que inventa citação é comum; aplicar correção inventada, não.
    ══════════════════════════════════════════════════════════════════════════ */
 
-const VOGAIS = "aeiouáéíóúâêôàãõäëïöü";
-const FORTES = "aeoáéóâêôàã";
-const FRACAS = "iuíúïü";
-const INSEPARAVEL = ["br","bl","cr","cl","dr","fr","fl","gr","gl","pr","pl","tr","tl",
-                     "vr","vl","ch","lh","nh","gu","qu"];
-const ENCLITICOS = ["me","te","se","lhe","lhes","nos","vos","o","a","os","as",
-                    "lo","la","los","las","no","na","nas"];
+const MODELO_IA = "openai/gpt-oss-120b";
+let chaveIA = localStorage.getItem("pv_groq") || "";
 
-const temAcento = s => /[áéíóúâêôàãõ]/.test(s);
-const semEnclitico = p => {
-  const partes = p.toLowerCase().split("-");
-  while (partes.length > 1 && ENCLITICOS.includes(partes[partes.length - 1])) partes.pop();
-  return partes.join("-");
-};
+const REGRAS = `Você revisa POESIA em português do Brasil.
 
-function silabas(palavra) {
-  const p = palavra.toLowerCase().replace(/[^a-zà-ÿ]/g, "");
-  if (!p) return [];
-  if (p === "ao" || p === "aos") return [p];   // ditongo, apesar das duas fortes
-  // o "u" de que/qui/gue/gui não soa: `que` é uma sílaba, não "qu-e"
-  const eVogal = (c, i) => VOGAIS.includes(c) &&
-    !(c === "u" && i > 0 && "qg".includes(p[i-1]) && i+1 < p.length && "eiéí".includes(p[i+1]));
+Aponte SOMENTE erros indiscutíveis de ortografia, acentuação e concordância.
 
-  const nucleos = [];
-  let i = 0;
-  while (i < p.length) {
-    if (!eVogal(p[i], i)) { i++; continue; }
-    let ini = i, fim = i;
-    while (fim + 1 < p.length && eVogal(p[fim+1], fim+1)) {
-      const a = p[fim], b = p[fim+1];
-      if ("ãõ".includes(a) && "oei".includes(b)) { fim++; continue; }   // ão, ãe, õe
-      if (FORTES.includes(a) && FORTES.includes(b)) break;              // hiato
-      if (FRACAS.includes(b) && temAcento(b)) break;                    // sa-ú-de
-      // po-e-si-a, di-a: paroxítona em ditongo crescente leva acento obrigatório
-      // (história, família), então sem acento a tônica cai na fraca — é hiato.
-      if (FRACAS.includes(a) && FORTES.includes(b) && fim+2 >= p.length && !temAcento(p)) break;
-      fim++;
-    }
-    nucleos.push([ini, fim]);
-    i = fim + 1;
-  }
-  if (!nucleos.length) return [p];
+NUNCA aponte, porque em poesia é decisão do autor:
+- linguagem coloquial ("pra", "tá", "cê")
+- pontuação por estilo (vírgula que "melhoraria a clareza")
+- ordem das palavras ou inversão
+- maiúscula reverencial (Tu, Ti, Teu, Contigo referindo-se a Deus)
+- repetição, escolha de palavra, verso curto ou longo
+- rima ou métrica
 
-  const cortes = [];
-  for (let n = 1; n < nucleos.length; n++) {
-    const fa = nucleos[n-1][1], ia = nucleos[n][0];
-    const cons = p.slice(fa + 1, ia);
-    let corte;
-    if (cons.length === 0) corte = ia;                                    // vo-o
-    else if (cons.length === 1) corte = ia - 1;                           // ca-sa
-    else if (INSEPARAVEL.includes(cons.slice(-2))) corte = ia - 2;        // a-bra-ço
-    else corte = ia - 1;                                                  // car-ta
-    cortes.push(Math.max(corte, fa + 1));
-  }
-  const out = []; let ini = 0;
-  for (const c of cortes) { out.push(p.slice(ini, c)); ini = c; }
-  out.push(p.slice(ini));
-  return out.filter(Boolean);
-}
+O campo "trecho" deve conter EXATAMENTE o texto como aparece no verso, sem
+reescrever nada, para poder ser localizado. "correcao" é só o trecho corrigido,
+nada de explicação dentro dele. "porque" é uma frase curta.
 
-function tonica(palavra) {
-  palavra = semEnclitico(palavra);
-  const s = silabas(palavra);
-  if (s.length <= 1) return 0;
-  const i = s.findIndex(temAcento);
-  if (i >= 0) return i;                                    // acento gráfico manda
-  const p = semAcento(palavra).replace(/[^a-z]/g, "");
-  if (/(r|l|z|i|u|im|om|um)s?$/.test(p)) return s.length - 1;   // oxítona
-  return s.length - 2;                                          // paroxítona
-}
+Se não houver erro nenhum, devolva a lista vazia.
 
-function terminacao(palavra) {
-  palavra = semEnclitico(palavra);
-  const s = silabas(palavra);
-  if (!s.length) return "";
-  return semAcento(s.slice(tonica(palavra)).join(""))
-    .replace(/ss/g,"s").replace(/rr/g,"r").replace(/ç/g,"s").replace(/z$/,"s")
-    .replace(/^(.*?)([aeiou])/, "$2");     // corta a consoante antes da tônica
-}
+Responda em JSON: {"erros":[{"verso":0,"trecho":"","correcao":"","porque":""}]}`;
 
-const soVogais = t => t.split("").filter(c => "aeiou".includes(c)).join("");
-
-/* Sílabas POÉTICAS: conta até a última tônica, com elisão. "Decassílabo" quer
-   dizer 10 até a tônica final — não 10 sílabas no total. */
-function metrica(verso) {
-  const palavras = verso.toLowerCase().match(/[a-zà-ÿ]+(?:-[a-zà-ÿ]+)*/g) || [];
-  if (!palavras.length) return {silabas: 0, ultima: ""};
-  const todas = [];
-  palavras.forEach((p, iP) => silabas(p).forEach((s, iS) =>
-    todas.push({texto: s, palavra: iP, indice: iS})));
-
-  const juntas = [];
-  for (const s of todas) {                    // elisão: "de água" = "dá-gua"
-    const a = juntas[juntas.length - 1];
-    if (a && a.palavra !== s.palavra && VOGAIS.includes(a.texto.slice(-1))
-        && VOGAIS.includes(s.texto[0])) {
-      a.texto += s.texto; a.palavra = s.palavra; a.indice = s.indice; continue;
-    }
-    juntas.push({...s});
-  }
-  const ult = palavras[palavras.length - 1], tU = tonica(ult);
-  let corte = juntas.length;
-  for (let i = juntas.length - 1; i >= 0; i--)
-    if (juntas[i].palavra === palavras.length - 1 && juntas[i].indice === tU) { corte = i+1; break; }
-  return {silabas: corte, ultima: ult};
-}
-
-function analisarPoema(corpo) {
-  const grupos = [], LETRAS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  return corpo.split("\n").map(l => l.trim()).filter(Boolean).map(v => {
-    const m = metrica(v), t = terminacao(m.ultima), vo = soVogais(t);
-    let g = grupos.find(x => x.termo === t);
-    let toanteCom = null;
-    if (!g) {
-      // toante só com 2+ vogais em comum; com uma só, toda oxítona em -er
-      // "rimaria" com toda em -e, e a análise viraria ruído
-      const par = grupos.find(x => x.vogais === vo && vo.length >= 2);
-      if (par) toanteCom = par.letra;
-      g = {termo: t, vogais: vo, letra: LETRAS[grupos.length] || "?"};
-      grupos.push(g);
-    }
-    return {verso: v, silabas: m.silabas, letra: g.letra, toanteCom, ultima: m.ultima};
+async function pedirRevisao(texto) {
+  const numerado = texto.split("\n").map((l, i) => `${i + 1}: ${l}`).join("\n");
+  const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {Authorization: `Bearer ${chaveIA}`, "Content-Type": "application/json"},
+    body: JSON.stringify({
+      model: MODELO_IA,
+      temperature: 0,
+      response_format: {type: "json_object"},
+      messages: [{role: "system", content: REGRAS}, {role: "user", content: numerado}],
+    }),
   });
+  if (r.status === 401) throw new Error("Chave recusada. Confira em console.groq.com/keys.");
+  if (r.status === 429) throw new Error("Limite de uso da Groq por agora. Tente em um minuto.");
+  if (!r.ok) throw new Error(`A Groq respondeu ${r.status}`);
+  const d = await r.json();
+  let saida;
+  try { saida = JSON.parse(d.choices[0].message.content); }
+  catch { throw new Error("a resposta veio embaralhada; tente de novo"); }
+  return Array.isArray(saida.erros) ? saida.erros : [];
 }
 
-/* ── LanguageTool ─────────────────────────────────────────────────────────────
-   API pública, sem chave e com CORS liberado. ⚠️ O texto SAI deste computador
-   e vai para o servidor deles — por isso o painel avisa, e por isso a revisão
-   só acontece quando você clica. Nada é enviado enquanto você escreve. */
-async function revisarTexto(texto) {
-  const corpo = new URLSearchParams({text: texto, language: "pt-BR"});
-  const r = await fetch("https://api.languagetool.org/v2/check",
-    {method: "POST", body: corpo,
-     headers: {"Content-Type": "application/x-www-form-urlencoded"}});
-  if (r.status === 429) throw new Error("O corretor pediu para esperar um pouco (limite de uso). Tente em 1 minuto.");
-  if (!r.ok) throw new Error(`o corretor respondeu ${r.status}`);
-  return (await r.json()).matches || [];
+/* Confere cada apontamento contra o texto e devolve onde ele realmente está.
+   O modelo erra a linha com frequência e às vezes cita trecho que não existe:
+   procuramos primeiro na linha indicada, depois no texto todo, e o que não for
+   encontrado é descartado. */
+function localizar(erros, texto) {
+  const linhas = texto.split("\n");
+  const inicios = [];
+  let acc = 0;
+  linhas.forEach(l => { inicios.push(acc); acc += l.length + 1; });
+
+  const bons = [], perdidos = [];
+  for (const e of erros) {
+    const trecho = (e.trecho || "").trim();
+    const correcao = (e.correcao || "").trim();
+    if (!trecho || !correcao || trecho === correcao) { perdidos.push(e); continue; }
+
+    let off = -1;
+    const n = (e.verso | 0) - 1;
+    if (n >= 0 && n < linhas.length) {                 // primeiro na linha que ela disse
+      const emLinha = linhas[n].indexOf(trecho);
+      if (emLinha >= 0) off = inicios[n] + emLinha;
+    }
+    if (off < 0) off = texto.indexOf(trecho);          // depois em qualquer lugar
+    if (off < 0) { perdidos.push(e); continue; }       // não existe: cai fora
+
+    bons.push({...e, off, len: trecho.length, trecho, correcao,
+               linha: texto.slice(0, off).split("\n").length});
+  }
+  return {bons, perdidos};
 }
 
 let achadosAtuais = [];
 
-function aplicarSugestao(i, valor) {
-  const m = achadosAtuais[i];
-  if (!m) return;
+function aplicarSugestao(i) {
+  const e = achadosAtuais[i];
+  if (!e) return;
   const t = $("#texto").value;
-  $("#texto").value = t.slice(0, m.offset) + valor + t.slice(m.offset + m.length);
+  if (t.slice(e.off, e.off + e.len) !== e.trecho) {   // o texto mudou embaixo
+    recado("Este trecho já mudou. Revise de novo.", "erro");
+    return;
+  }
+  $("#texto").value = t.slice(0, e.off) + e.correcao + t.slice(e.off + e.len);
   sujo = true;
   atualizarPrevia();
-  rodarRevisao();          // offsets mudaram: refaz em vez de remendar
+  rodarRevisao();        // as posições mudaram: refaz em vez de remendar
+}
+
+function irAte(off, len) {
+  const t = $("#texto");
+  t.focus();
+  t.setSelectionRange(off, off + len);
+  const linha = t.value.slice(0, off).split("\n").length;
+  const alt = parseFloat(getComputedStyle(t).lineHeight) || 22;
+  t.scrollTop = Math.max(0, (linha - 4) * alt);
 }
 
 async function rodarRevisao() {
-  const secao = SECOES.find(s => s.pasta === $("#secao").value);
-  const corpo = $("#texto").value;
   const alvo = $("#revisao");
+  const corpo = $("#texto").value;
+
   if (!corpo.trim()) { alvo.innerHTML = '<p class="resumo">Nada escrito ainda.</p>'; return; }
 
-  let html = "";
-
-  // 1) Métrica e rima — só em verso, e sem rede
-  if (secao.verso) {
-    const a = analisarPoema(corpo);
-    const cont = {};
-    a.forEach(r => cont[r.silabas] = (cont[r.silabas] || 0) + 1);
-    const comum = +Object.entries(cont).sort((x, y) => y[1] - x[1])[0][0];
-    const regular = cont[comum] >= a.length * 0.7;
-
-    // ── RIMAS: quem rima com quem, e quem ficou sozinho ──────────────────────
-    // A letra sozinha ("ABCB") não diz o que fazer. O que serve é ver as palavras
-    // agrupadas — e principalmente quais terminações não acharam par nenhum.
-    const porLetra = new Map();
-    a.forEach((r, i) => {
-      if (!porLetra.has(r.letra)) porLetra.set(r.letra, []);
-      porLetra.get(r.letra).push({...r, n: i + 1});
-    });
-    const comPar = [...porLetra.values()].filter(g => g.length > 1);
-    const semPar = [...porLetra.values()].filter(g => g.length === 1).flat();
-
-    // Quanto do poema participa de alguma rima. Num verso livre isso é baixo, e
-    // aí NÃO há o que corrigir — listar quinze "sem par" seria inventar problema
-    // onde não existe. O revisor tem de saber calar quando não há o que dizer.
-    const rimados = comPar.reduce((s, g) => s + g.length, 0);
-    const proporcao = a.length ? rimados / a.length : 0;
-    const rimado = proporcao >= 0.4;
-
-    html += "<h3>rimas</h3>";
-    if (!rimado) {
-      html += `<p class="resumo">Este poema é de <b>verso livre</b>: `
-            + (rimados
-                ? `só ${rimados} dos ${a.length} versos caem em alguma rima.`
-                : `nenhum verso rima com outro.`)
-            + ` Não há rima a corrigir — se era essa a intenção, está certo assim.`;
-      if (comPar.length)
-        html += `<br><span style="opacity:.75">Os poucos que coincidem: `
-              + comPar.map(g => g.map(r => esc(r.ultima)).join("/")).join(" · ") + ".</span>";
-      html += "</p>";
-    } else {
-      html += "<div class='rimas'>" + comPar.map(g =>
-        `<div class="grupo"><span class="letra">${g[0].letra}</span>`
-        + g.map(r => `<span class="pal" title="verso ${r.n}">${esc(r.ultima)}</span>`).join("")
-        + `<span class="qtd">${g.length} versos</span></div>`).join("") + "</div>";
-      if (semPar.length) {
-        html += `<p class="resumo" style="margin-top:.7rem"><b>Ficaram sem par:</b> `
-              + semPar.map(r => `<span class="pal solta" title="verso ${r.n}">${esc(r.ultima)}</span>`).join("")
-              + `<br><span style="opacity:.75">O poema rima, mas estas terminações não
-                 acharam companhia. Se era para rimar, é aqui que falta.</span></p>`;
-      }
-    }
-
-    // ── MÉTRICA: quanto falta ou sobra, não só o número ──────────────────────
-    html += "<h3>versos</h3><table class='versos'>";
-    a.forEach((r, i) => {
-      const dif = regular ? r.silabas - comum : 0;
-      const fora = regular && dif !== 0;
-      html += `<tr><td class="n">${i+1}</td>`
-            + `<td class="s ${fora ? "destoa" : ""}">${r.silabas}</td>`
-            + `<td class="dif">${fora ? (dif > 0 ? `+${dif}` : dif) : ""}</td>`
-            + `<td class="r">${r.letra}${r.toanteCom ? `<span style="opacity:.5">~${r.toanteCom}</span>` : ""}</td>`
-            + `<td class="v">${esc(r.verso.slice(0, 38))}<b class="fim">${esc(r.ultima)}</b></td></tr>`;
-    });
-    html += "</table><p class='resumo' style='margin-top:.8rem'>";
-    html += regular
-      ? `Metro: <b>${comum} sílabas</b> na maioria`
-        + (cont[comum] < a.length
-            ? ` — ${a.length - cont[comum]} verso(s) fora. A coluna do meio diz quantas
-                sílabas <b>sobram (+)</b> ou <b>faltam (−)</b> em cada um.`
-            : ", em todos.")
-      : `Metro <b>livre</b>: de ${Math.min(...a.map(r=>r.silabas))} a ${Math.max(...a.map(r=>r.silabas))}
-         sílabas. Se você queria metro fixo, escolha o número e a coluna passa a mostrar
-         quanto falta em cada verso.`;
-    html += "<br><span style='opacity:.75'>A contagem é poética: vai até a última sílaba forte "
-          + "do verso e junta vogais entre palavras (elisão). O <b>~</b> marca rima imperfeita.</span></p>";
+  if (!chaveIA) {
+    alvo.innerHTML = `
+      <h3>revisão</h3>
+      <p class="resumo">Para revisar, o painel precisa de uma chave da Groq — é gratuita.
+        Ela fica só neste aparelho, como o token do GitHub, e a página nunca a envia
+        para lugar nenhum além da própria Groq.</p>
+      <ol class="passos">
+        <li>Abra <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a></li>
+        <li>Crie uma chave e copie</li>
+        <li>Cole abaixo</li>
+      </ol>
+      <div class="linha">
+        <input id="chaveGroq" type="password" placeholder="gsk_..." autocomplete="off">
+        <button class="principal" id="salvarChave">Guardar</button>
+      </div>`;
+    $("#salvarChave").onclick = () => {
+      const v = $("#chaveGroq").value.trim();
+      if (!v) return;
+      chaveIA = v;
+      localStorage.setItem("pv_groq", v);
+      rodarRevisao();
+    };
+    $("#chaveGroq").onkeydown = e => { if (e.key === "Enter") $("#salvarChave").click(); };
+    return;
   }
 
-  // 2) Ortografia e gramática
-  html += "<h3>ortografia e gramática</h3><div id='achados'>procurando…</div>";
-  html += `<p class="aviso-rede">A conferência de ortografia manda o texto para o
-    LanguageTool, um corretor gratuito que roda fora daqui. Só acontece quando você
-    clica em Revisar — nunca enquanto escreve. A análise de versos, essa é feita
-    aqui mesmo e não sai do aparelho.</p>`;
-  alvo.innerHTML = html;
+  alvo.innerHTML = '<h3>revisão</h3><p class="resumo">Lendo o texto…</p>';
 
   try {
-    achadosAtuais = await revisarTexto(corpo);
-    const cx = $("#achados");
-    if (!achadosAtuais.length) {
-      cx.innerHTML = '<p class="resumo">Nada encontrado.</p>';
-      return;
+    const crus = await pedirRevisao(corpo);
+    const {bons, perdidos} = localizar(crus, corpo);
+    achadosAtuais = bons;
+
+    let html = "<h3>revisão</h3>";
+    if (!bons.length) {
+      html += '<p class="resumo">Nenhum erro de ortografia, acentuação ou concordância.</p>';
+    } else {
+      const linhas = corpo.split("\n");
+      html += bons.map((e, i) => {
+        const l = linhas[e.linha - 1] || "";
+        const dentro = l.indexOf(e.trecho);
+        const ctx = dentro >= 0
+          ? `${esc(l.slice(0, dentro))}<mark>${esc(e.trecho)}</mark>${esc(l.slice(dentro + e.trecho.length))}`
+          : esc(l);
+        return `<div class="achado">
+          <p class="ctx">${ctx}</p>
+          <p class="msg">${esc(e.porque || "")}</p>
+          <div class="sugs">
+            <button data-ap="${i}">${esc(e.trecho)} → <b>${esc(e.correcao)}</b></button>
+          </div>
+          <div class="ondes"><button class="ir" data-off="${e.off}" data-len="${e.len}"
+            >linha ${e.linha}</button></div>
+        </div>`;
+      }).join("");
     }
 
-    // ── Erro de verdade × palpite de estilo ──────────────────────────────────
-    // O LanguageTool mistura as duas coisas. Num poema, "pra" no lugar de "para"
-    // e a vírgula que ele quer pôr depois de "Sim" não são erros: são a fala e o
-    // ritmo que o autor escolheu. Por isso o estilo vem separado, e em verso ele
-    // vem fechado — para não afogar os erros de verdade no meio de opinião.
-    const eEstilo = m => m.rule.issueType === "style"
-                      || (m.rule.category && /style|redundan|typograph/i.test(m.rule.category.id || ""));
+    // Transparência sobre o que a IA disse e não se sustentou. Nunca esconder isso:
+    // é a medida de quanto ela está inventando hoje.
+    if (perdidos.length)
+      html += `<p class="resumo" style="margin-top:1rem;opacity:.75">
+        ${perdidos.length} apontamento(s) foram descartados: a IA citou trecho que
+        não existe no texto. Correção inventada não se aplica.</p>`;
 
-    // O mesmo erro repetido é UM erro. "Tú" aparecia seis vezes na lista.
-    const chave = m => `${m.rule.id}|${m.context.text.substr(m.context.offset, m.context.length)}`;
-    const juntar = lista => {
-      const mapa = new Map();
-      lista.forEach(({m, i}) => {
-        const k = chave(m);
-        // guarda TODAS as posições: agrupar não pode custar o "onde"
-        if (mapa.has(k)) {
-          const g = mapa.get(k);
-          g.vezes++;
-          g.ondes.push({off: m.offset, len: m.length});
-        } else {
-          mapa.set(k, {m, i, vezes: 1, ondes: [{off: m.offset, len: m.length}]});
-        }
-      });
-      return [...mapa.values()];
+    html += `<p class="aviso-rede">O texto é enviado à Groq (${esc(MODELO_IA)}) quando
+      você abre esta aba — nunca enquanto escreve. A IA erra: ela não decide nada
+      sozinha, só sugere, e quem aceita é você.
+      <button id="trocarChave" class="link">trocar a chave</button></p>`;
+
+    alvo.innerHTML = html;
+    alvo.querySelectorAll("button[data-ap]").forEach(b =>
+      b.onclick = () => aplicarSugestao(+b.dataset.ap));
+    alvo.querySelectorAll("button.ir").forEach(b =>
+      b.onclick = () => irAte(+b.dataset.off, +b.dataset.len));
+    $("#trocarChave").onclick = () => {
+      localStorage.removeItem("pv_groq"); chaveIA = ""; rodarRevisao();
     };
-
-    const todos = achadosAtuais.map((m, i) => ({m, i}));
-    const erros  = juntar(todos.filter(x => !eEstilo(x.m)));
-    const estilo = juntar(todos.filter(x =>  eEstilo(x.m)));
-
-    // Em que linha do texto cai este offset. Sem isto, o painel dizia "troque 'é'"
-    // sem dizer QUAL 'é' — e num poema com dez 'é' isso não ajuda ninguém.
-    const linhaDe = off => corpo.slice(0, off).split("\n").length;
-
-    const bloco = ({m, i, vezes, ondes}) => {
-      const trecho = m.context.text.substr(m.context.offset, m.context.length);
-      const sugs = (m.replacements || []).slice(0, 4);
-      // ⚠️ Algumas regras devolvem grafia de Portugal mesmo pedindo pt-BR:
-      // "matrimonio" → "matrimónio", quando aqui é "matrimônio". Marcamos as
-      // suspeitas (mesma palavra, só o acento muda para agudo) em vez de aplicar calado.
-      const suspeita = s => semAcento(s) === semAcento(trecho) && /[óé]/.test(s) && !/[óé]/.test(trecho);
-
-      // A frase ao redor, com o pedaço errado destacado. É o que responde "onde?".
-      const c = m.context;
-      const ctx = `${esc(c.text.slice(0, c.offset))}`
-                + `<mark>${esc(c.text.substr(c.offset, c.length)) || "▮"}</mark>`
-                + `${esc(c.text.slice(c.offset + c.length))}`;
-
-      const linhas = (ondes || [{off: m.offset, len: m.length}]);
-      const irs = linhas.map(o =>
-        `<button class="ir" data-off="${o.off}" data-len="${o.len}"
-                 title="Levar o cursor até aqui">linha ${linhaDe(o.off)}</button>`).join("");
-
-      return `<div class="achado">
-        <p class="ctx">${ctx}</p>
-        <p class="msg">${esc(m.message)}</p>
-        <div class="sugs">
-          ${sugs.map(s =>
-            `<button data-i="${i}" data-v="${esc(s.value)}"${suspeita(s.value)
-              ? ' class="pt" title="Confira: pode ser a grafia de Portugal (lá é ó, aqui é ô)"' : ""
-            }>${esc(s.value)}${suspeita(s.value) ? " ⚠" : ""}</button>`).join("")}
-        </div>
-        <div class="ondes">${vezes > 1 ? `<span class="vezes">${vezes} vezes:</span> ` : ""}${irs}</div>
-      </div>`;
-    };
-
-    cx.innerHTML =
-      (erros.length
-        ? erros.map(bloco).join("")
-        : '<p class="resumo">Nenhum erro de ortografia ou gramática.</p>')
-      + (estilo.length
-        ? `<details class="estilo"${secao.verso ? "" : " open"}>
-             <summary>${estilo.length} sugest${estilo.length > 1 ? "ões" : "ão"} de estilo`
-           + `${secao.verso ? " — em poesia, quase sempre é para ignorar" : ""}</summary>`
-           + estilo.map(bloco).join("") + "</details>"
-        : "");
-
-    cx.querySelectorAll("button[data-v]").forEach(b =>
-      b.onclick = () => aplicarSugestao(+b.dataset.i, b.dataset.v));
-
-    // "linha N" leva o cursor até o trecho e o deixa selecionado, para você ver
-    // no próprio texto onde está o problema.
-    cx.querySelectorAll("button.ir").forEach(b => b.onclick = () => {
-      const t = $("#texto");
-      const off = +b.dataset.off, len = +b.dataset.len;
-      t.focus();
-      t.setSelectionRange(off, off + len);
-      // rola até a linha: aproxima pela altura de linha do textarea
-      const linha = t.value.slice(0, off).split("\n").length;
-      const alt = parseFloat(getComputedStyle(t).lineHeight) || 22;
-      t.scrollTop = Math.max(0, (linha - 4) * alt);
-    });
   } catch (e) {
-    $("#achados").innerHTML = `<p class="resumo">Não deu para conferir agora: ${esc(e.message)}</p>`;
+    alvo.innerHTML = `<h3>revisão</h3><p class="resumo">Não deu para revisar: ${esc(e.message)}</p>
+      <p class="aviso-rede"><button id="trocarChave" class="link">trocar a chave</button></p>`;
+    $("#trocarChave").onclick = () => {
+      localStorage.removeItem("pv_groq"); chaveIA = ""; rodarRevisao();
+    };
   }
 }
 
