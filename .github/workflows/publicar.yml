@@ -42,8 +42,11 @@ jobs:
             exit 1
           fi
 
-      - name: Gerar o site
-        run: python3 gerar.py
+      # ⚠️ TEMPORÁRIO — o `--previa` monta também as três variações de aparência
+      # em /previa/, para comparar e escolher. Assim que a escolha for feita,
+      # isto volta a ser `python3 gerar.py` e a pasta /previa/ deixa de existir.
+      - name: Gerar o site (com as prévias de aparência)
+        run: python3 gerar.py --previa
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

@@ -1,0 +1,174 @@
+/* ============================================================================
+   C — CADERNO
+
+   Partido: nada escondido. A home mostra TODOS os textos, agrupados por seção,
+   cada um com as primeiras linhas. Quem chega vê o acervo inteiro de uma vez e
+   escolhe pelo trecho, não pelo título.
+
+   Fundo levemente pautado, colunas, tipografia menor e mais densa. Serve se o
+   acervo vai crescer e você quer que ele pareça grande — e se você gosta de ver
+   tudo sem clicar.
+   ========================================================================= */
+
+:root {
+  --papel:  #f4f2ec;
+  --cartao: #fffefb;
+  --tinta:  #1e1c18;
+  --suave:  #756f64;
+  --linha:  #ddd8cc;
+  --acento: #2f6b4f;        /* verde de caneta */
+  --serif: 'Iowan Old Style', Palatino, Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --papel:#14150f; --cartao:#1b1c16; --tinta:#e2dfd4; --suave:#8f8a7d;
+          --linha:#2a2b22; --acento:#7fc0a0; }
+}
+
+*,*::before,*::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin:0; color: var(--tinta); font-family: var(--serif);
+  font-size: clamp(1.02rem, .97rem + .3vw, 1.16rem); line-height: 1.68;
+  -webkit-font-smoothing: antialiased;
+  display:flex; flex-direction:column; min-height:100vh;
+  /* pauta discreta, como a de um caderno */
+  background:
+    linear-gradient(var(--papel) 0 0),
+    repeating-linear-gradient(var(--papel) 0 1.66rem, var(--linha) 1.66rem 1.67rem);
+  background-blend-mode: normal;
+}
+@media (prefers-reduced-motion: no-preference) { body { background-attachment: local; } }
+
+a { color: inherit; text-decoration: none; }
+:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+.pular { position:absolute; left:-9999px; }
+.pular:focus { left:1rem; top:1rem; background:var(--cartao); padding:.6rem 1rem; }
+
+.topo {
+  display:flex; align-items:center; gap:.7rem 1.5rem; flex-wrap:wrap;
+  max-width: 62rem; width:100%; margin:0 auto; padding:1.4rem 1.4rem 1rem;
+  border-bottom: 2px solid var(--acento);
+}
+.marca {
+  display:inline-flex; align-items:center; gap:.5rem;
+  font-family: var(--sans); font-weight:600; font-size:1rem;
+  letter-spacing:.04em; color: var(--tinta);
+}
+.marca .simbolo { width:1.4em; height:1.4em; flex:none; color:var(--acento); }
+.topo nav {
+  margin-left:auto; display:flex; gap:1.1rem;
+  font-family:var(--sans); font-size:.78rem; letter-spacing:.05em;
+}
+.topo nav a { color:var(--suave); }
+.topo nav a:hover { color:var(--acento); }
+
+main { flex:1; max-width:62rem; width:100%; margin:0 auto; padding:2rem 1.4rem 4.5rem; }
+.rodape {
+  max-width:62rem; width:100%; margin:0 auto; padding:1.5rem 1.4rem 2.5rem;
+  border-top:1px solid var(--linha);
+  font-family:var(--sans); font-size:.74rem; color:var(--suave); line-height:1.6;
+}
+.rodape p { margin:.15rem 0; }
+
+.capa {
+  font-family: var(--sans); font-weight:600;
+  font-size: clamp(1.6rem, 1.3rem + 1.6vw, 2.2rem);
+  letter-spacing:-0.015em; line-height:1.15; margin:.5rem 0 .25rem;
+}
+.sub { font-family:var(--sans); font-size:.85rem; color:var(--suave); margin:0 0 2.4rem; }
+
+h1 {
+  font-family: var(--sans); font-weight:600;
+  font-size: clamp(1.5rem, 1.25rem + 1.3vw, 2rem);
+  line-height:1.2; letter-spacing:-0.015em; margin:.4rem 0 .3rem; text-wrap:balance;
+}
+h2 {
+  font-family:var(--sans); font-size:.74rem; font-weight:700;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--acento);
+  margin:2.6rem 0 1rem;
+}
+h2 a { color: inherit; }
+h2 .qtd {
+  font-weight:400; color:var(--suave); letter-spacing:0;
+  background:var(--cartao); border:1px solid var(--linha); border-radius:99px;
+  padding:.05rem .45rem; margin-left:.3rem; font-size:.9em;
+}
+
+/* ── O acervo em cartões ────────────────────────────────────────────────── */
+.bloco { margin-bottom: 1rem; }
+.lista {
+  list-style:none; margin:0; padding:0;
+  display:grid; grid-template-columns: repeat(auto-fill, minmax(16rem,1fr)); gap:.9rem;
+}
+.cartao {
+  background: var(--cartao);
+  border:1px solid var(--linha); border-radius:10px;
+  padding: .9rem 1rem 1rem;
+  transition: border-color .15s, transform .15s;
+}
+.cartao:hover { border-color: var(--acento); transform: translateY(-1px); }
+.cartao > a {
+  display:block; font-family:var(--sans); font-weight:600; font-size:.98rem;
+  line-height:1.3; text-wrap:balance;
+}
+.cartao time {
+  display:block; font-family:var(--sans); font-size:.68rem; color:var(--suave); margin-top:.25rem;
+}
+.cartao p {
+  margin:.5rem 0 0; font-size:.9rem; line-height:1.55; color:var(--suave);
+  text-wrap:pretty;
+  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+}
+.vazio { color:var(--suave); font-style:italic; }
+
+/* ── O texto: sai da pauta, ganha uma folha branca ──────────────────────── */
+article {
+  background: var(--cartao);
+  border:1px solid var(--linha); border-radius:12px;
+  padding: 2.4rem clamp(1.2rem, 4vw, 3rem) 2.8rem;
+  margin-bottom: 1.2rem;
+}
+article > time {
+  display:block; font-family:var(--sans); font-size:.74rem; color:var(--suave);
+  margin-bottom:2rem;
+}
+article p { text-wrap:pretty; }
+.prosa { max-width:34rem; }
+.prosa p { margin:0 0 1.25em; hyphens:auto; -webkit-hyphens:auto; }
+.verso { max-width:31rem; }
+.estrofe { margin:0 0 1.9em; line-height:1.9; hyphens:none; }
+.refrao {
+  font-style:italic; border-left:3px solid var(--acento);
+  padding-left:1.1rem; margin-left:-1.1rem;
+}
+.rotulo {
+  display:block; font-family:var(--sans); font-style:normal; font-size:.66rem;
+  font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--acento); margin-bottom:.45em;
+}
+blockquote { margin:1.9rem 0; padding-left:1.2rem; border-left:3px solid var(--linha);
+  color:var(--suave); font-style:italic; }
+blockquote p { margin:0; }
+hr { border:0; margin:2.4rem 0; width:3rem; border-top:2px solid var(--linha); }
+strong { font-weight:600; }
+
+.vizinhos {
+  display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap;
+  margin:0 0 1rem; padding:0 .3rem;
+  font-family:var(--sans); font-size:.8rem; line-height:1.4;
+}
+.vizinhos a { color:var(--suave); max-width:47%; }
+.vizinhos a:hover { color:var(--acento); }
+.vizinhos .prox { margin-left:auto; text-align:right; }
+.volta { font-family:var(--sans); font-size:.78rem; color:var(--suave); padding:0 .3rem; }
+.volta a:hover { color:var(--acento); }
+
+@media print {
+  body { background:#fff; color:#000; font-size:11.5pt; }
+  .topo nav, .vizinhos, .volta, .rodape { display:none; }
+  article { border:0; padding:0; }
+  .estrofe { page-break-inside: avoid; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition:none !important; } }

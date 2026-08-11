@@ -38,6 +38,23 @@ SAIDA = RAIZ / "_site"
 TEXTOS = RAIZ / "conteudo"
 TEMA = RAIZ / "tema"
 
+# ── Variações de aparência ───────────────────────────────────────────────────
+# O site pode ser gerado com caras diferentes para comparar antes de decidir.
+# `python3 gerar.py --previa` monta as três em `_site/previa/<letra>/`.
+#
+#   modo da home:
+#     lista   só os títulos, em ordem — o índice de um livro
+#     capa    o texto mais recente inteiro na primeira tela, e a lista abaixo
+#     indice  tudo à mostra, agrupado por seção, com as primeiras linhas
+VARIACOES = {
+    "a": {"nome": "Livro",   "css": "visual-livro.css",   "home": "lista"},
+    "b": {"nome": "Revista", "css": "visual-revista.css", "home": "capa"},
+    "c": {"nome": "Caderno", "css": "visual-caderno.css", "home": "indice"},
+}
+ESTILO = "estilo.css"     # trocados quando se gera uma prévia
+HOME = "lista"
+NOINDEX = False
+
 
 # ── Configuração ─────────────────────────────────────────────────────────────
 def ler_config():
@@ -254,7 +271,7 @@ def pagina(cfg, *, titulo, descricao, caminho, conteudo, jsonld=None, capa=False
         # o mesmo texto acessível por dois caminhos vira conteúdo duplicado.
         f'<link rel="canonical" href="{e(url)}">',
         f'<link rel="alternate" type="application/rss+xml" title="{e(cfg["nome"])}" href="{e(cfg["url"])}/feed.xml">',
-        f'<link rel="stylesheet" href="{prof}estilo.css">',
+        f'<link rel="stylesheet" href="{prof}{ESTILO}">',
         # SVG primeiro: é o que os navegadores atuais preferem, e é o único que
         # troca de cor sozinho quando a aba está no tema escuro. O PNG fica de
         # reserva para quem não lê SVG, e o apple-touch-icon é o da tela do iPhone.
@@ -271,6 +288,10 @@ def pagina(cfg, *, titulo, descricao, caminho, conteudo, jsonld=None, capa=False
         '<meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)">',
         '<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">',
     ]
+    # Prévia não entra na busca: são três cópias do mesmo acervo, e conteúdo
+    # duplicado é exatamente o que a tag canônica existe para evitar.
+    if NOINDEX:
+        cabeca.append('<meta name="robots" content="noindex, nofollow">')
     if jsonld:
         cabeca.append('<script type="application/ld+json">'
                       + json.dumps(jsonld, ensure_ascii=False) + "</script>")
@@ -331,13 +352,46 @@ def gerar():
     # hora em que é escrita — é o que impede o site de crescer e o sitemap não.
     urls = []
 
-    # Home
-    destaques = "\n".join(cartao(t) for t in textos[:12])
-    corpo_home = (f'<h1 class="capa">{html.escape(cfg["nome"])}</h1>'
-                  f'<p class="sub">{html.escape(cfg["subtitulo"])}</p>')
-    corpo_home += (f'<h2>Mais recentes</h2><ul class="lista">{destaques}</ul>'
-                   if textos else
-                   '<p class="vazio">Ainda não há textos publicados.</p>')
+    # Home — três modos, para comparar antes de decidir (ver VARIACOES)
+    e = lambda s: html.escape(str(s), quote=True)
+    corpo_home = (f'<h1 class="capa">{e(cfg["nome"])}</h1>'
+                  f'<p class="sub">{e(cfg["subtitulo"])}</p>')
+
+    if not textos:
+        corpo_home += '<p class="vazio">Ainda não há textos publicados.</p>'
+
+    elif HOME == "capa":
+        # O texto mais recente inteiro na primeira tela. A home É a leitura —
+        # quem chega já está lendo, em vez de escolher numa lista.
+        t = textos[0]
+        s = t["secao"]
+        corpo_home += (
+            f'<article class="destaque {"verso" if s["verso"] else "prosa"}">'
+            f'<span class="etiqueta">{e(s["titulo"])}</span>'
+            f'<h2 class="tituloDestaque"><a href="{s["pasta"]}/{t["slug"]}/">{e(t["titulo"])}</a></h2>'
+            f'<time datetime="{t["data"].isoformat()}">{por_extenso(t["data"])}</time>'
+            f'{render(t["corpo"], s["verso"])}'
+            f'</article>')
+        if len(textos) > 1:
+            corpo_home += ('<h2>Antes disso</h2><ul class="lista">'
+                           + "\n".join(cartao(x) for x in textos[1:13]) + "</ul>")
+
+    elif HOME == "indice":
+        # Tudo à mostra, por seção. Nada escondido atrás de clique.
+        for s in cfg["secoes"]:
+            dela = [x for x in textos if x["secao"]["pasta"] == s["pasta"]]
+            if not dela:
+                continue
+            corpo_home += (f'<section class="bloco"><h2><a href="{s["pasta"]}/">'
+                           f'{e(s["titulo"])}</a> <span class="qtd">{len(dela)}</span></h2>'
+                           '<ul class="lista">'
+                           + "\n".join(cartao(x) for x in dela) + "</ul></section>")
+
+    else:  # lista — o índice de um livro: títulos, datas, nada mais
+        corpo_home += ('<ul class="lista nua">' + "\n".join(
+            f'<li><a href="{x["secao"]["pasta"]}/{x["slug"]}/">{e(x["titulo"])}</a>'
+            f'<span class="meta">{e(x["secao"]["titulo"].lower())} · '
+            f'{por_extenso(x["data"])}</span></li>' for x in textos) + "</ul>")
     escrever("index.html", pagina(
         cfg, titulo=f"{cfg['nome']} — {cfg['subtitulo']}", descricao=cfg["descricao"],
         caminho="", conteudo=corpo_home, capa=True,
@@ -429,13 +483,13 @@ def gerar():
 
     escrever("sitemap.xml", monta_sitemap(cfg, urls))
     escrever("robots.txt",
-             f"User-agent: *\nAllow: /\nDisallow: /admin/\n\n"
+             f"User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /previa/\n\n"
              f"Sitemap: {cfg['url']}/sitemap.xml\n")
     escrever("feed.xml", monta_feed(cfg, textos))
 
-    css = TEMA / "estilo.css"
+    css = TEMA / ESTILO
     if css.exists():
-        shutil.copy(css, SAIDA / "estilo.css")
+        shutil.copy(css, SAIDA / ESTILO)
 
     # Ícones. O `favicon.ico` existe porque o navegador o pede na raiz por conta
     # própria, sem olhar as tags do <head> — e 404 repetido polui log e é feio.
@@ -484,7 +538,63 @@ def monta_feed(cfg, textos):
 
 
 # ── Relatório ────────────────────────────────────────────────────────────────
+def gerar_previas():
+    """Monta as três variações em `_site/previa/<letra>/` para comparar de verdade,
+    com os textos reais dentro. Escolher aparência olhando descrição não funciona."""
+    global SAIDA, ESTILO, HOME, NOINDEX
+    original = SAIDA
+    cfg = ler_config()
+
+    # O site de verdade primeiro: `gerar()` limpa a pasta de saída, e se as
+    # prévias viessem antes seriam apagadas por ele.
+    gerar()
+
+    NOINDEX = True
+    print(f"\n  Prévias — {cfg['nome']}\n")
+    for letra, v in VARIACOES.items():
+        SAIDA, ESTILO, HOME = original / "previa" / letra, v["css"], v["home"]
+        _, textos, urls, _ = gerar()
+        print(f"    {letra})  {v['nome']:<9} {len(textos)} textos · home '{v['home']}'"
+              f"  →  /previa/{letra}/")
+
+    # Uma página para escolher, com link para as três.
+    SAIDA, NOINDEX = original, False
+    cartoes = "".join(
+        f'<li><a href="{L}/"><b>{v["nome"]}</b>'
+        f'<span>{ {"lista": "índice enxuto, como o de um livro",
+                   "capa": "o texto mais novo inteiro na primeira tela",
+                   "indice": "tudo à mostra, agrupado por seção"}[v["home"]] }</span></a></li>'
+        for L, v in VARIACOES.items())
+    (SAIDA / "previa").mkdir(parents=True, exist_ok=True)
+    (SAIDA / "previa" / "index.html").write_text(f"""<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Três aparências — {html.escape(cfg['nome'])}</title>
+<style>
+ body{{font:16px/1.6 -apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+   max-width:32rem;margin:12vh auto;padding:0 1.4rem;background:#f6f8fa;color:#16202c}}
+ @media(prefers-color-scheme:dark){{body{{background:#0f151d;color:#d5dde6}}}}
+ h1{{font-weight:400;font-size:1.6rem;margin:0 0 .3rem}}
+ p{{color:#5c6b7d;margin:0 0 2rem}}
+ ul{{list-style:none;padding:0;margin:0}} li{{margin-bottom:.7rem}}
+ a{{display:block;padding:1rem 1.1rem;border:1px solid #dde4ec;border-radius:10px;
+   text-decoration:none;color:inherit}}
+ a:hover{{border-color:#1f5c9e}}
+ b{{display:block;font-size:1.05rem}} span{{color:#5c6b7d;font-size:.87rem}}
+</style></head><body>
+<h1>Três aparências</h1>
+<p>Os mesmos textos, três jeitos. Abra as três e diga qual fica.</p>
+<ul>{cartoes}</ul>
+</body></html>""", encoding="utf-8")
+    print(f"\n    escolher em:  /previa/\n")
+
+
 def main():
+    if "--previa" in sys.argv:
+        gerar_previas()
+        return 0
+
     cfg, textos, urls, avisos = gerar()
 
     print(f"\n  {cfg['nome']} — {cfg['url']}")
