@@ -38,9 +38,13 @@
    NÃO ENTRAM  no corpo do texto. Pastel é claro por definição, e texto claro
            sobre fundo claro não se lê: o poema continua em tinta escura.
 
-   Os dois têm duas versões: a `-forte` é o pastel puxado ao ponto em que ainda
-   passa em contraste 4.5:1 (o mínimo legível), usada onde vira texto; a clara é
-   o pastel de verdade, usada só como fundo e borda, onde ninguém precisa ler.
+   Os dois têm duas versões: a escura é o pastel puxado até passar em contraste
+   4.5:1 sobre a folha — o mínimo legível —, usada onde a cor vira texto; a clara
+   é o pastel de verdade, usada só como fundo e borda, onde ninguém precisa ler.
+
+   ⚠️ Os valores foram MEDIDOS, não estimados. As primeiras versões (#4a7fa8 e
+   #c2706b) traziam este mesmo comentário e davam 4.29:1 e 3.61:1 — o comentário
+   afirmava o que a cor não cumpria. Mexeu no tom? meça de novo.
    ───────────────────────────────────────────────────────────────────────── */
 :root {
   /* A MESA e a FOLHA.
@@ -57,9 +61,9 @@
   --linha:  #dbe6f0;      /* azul pastel bem baixo, no lugar do cinza */
   --realce: #f4f8fc;      /* fundo de bloco, azul quase branco */
 
-  --azul:       #4a7fa8;  /* azul pastel, escurecido até dar contraste de leitura */
+  --azul:       #487ba3;  /* pastel escurecido até 4.53:1 sobre a folha — MEDIDO */
   --azul-claro: #e8f0f7;
-  --vermelho:       #c2706b;  /* idem, no vermelho */
+  --vermelho:       #b95a55;  /* idem, 4.51:1 — MEDIDO */
   --vermelho-claro: #fbeeec;
 
   --titulo: 'Fraunces', 'Iowan Old Style', Palatino, Georgia, serif;

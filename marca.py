@@ -37,9 +37,9 @@ FORMA = [
 # As mesmas duas cores do site (ver `estilo.css`): a prosa em azul, o verso em
 # vermelho. No ícone da aba elas aparecem juntas — é o que o distingue de
 # qualquer outro quadradinho na barra do navegador.
-AZUL_CLARO = "#4a7fa8"      # prosa, sobre fundo claro
+AZUL_CLARO = "#487ba3"      # prosa, sobre fundo claro
 AZUL_ESCURO = "#9dc4e4"     # prosa, sobre fundo escuro
-VERM_CLARO = "#c2706b"      # verso, sobre fundo claro
+VERM_CLARO = "#b95a55"      # verso, sobre fundo claro
 VERM_ESCURO = "#e8a9a4"     # verso, sobre fundo escuro
 PAPEL = "#ffffff"
 

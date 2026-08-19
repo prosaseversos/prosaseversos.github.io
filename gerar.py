@@ -526,7 +526,16 @@ def gerar():
                   else '<p class="vazio">Nada publicado nesta seção ainda.</p>')
         escrever(f"{s['pasta']}/index.html", pagina(
             cfg, titulo=s["titulo"],
-            descricao=f"{s['descricao']} {len(dela)} texto(s) de {cfg['autor']}.".strip(),
+            # Uma descrição de 38 caracteres o Google descarta e escreve a
+            # dele. Aqui ela cita os títulos, que é o que a pessoa buscando
+            # quer ver no resultado — e fica única por seção.
+            descricao=(f"{s['descricao']} "
+                       + (f"{len(dela)} texto"
+                          + ("s" if len(dela) != 1 else "")
+                          + f" em {cfg['nome']}: "
+                          + ", ".join(x["titulo"] for x in dela[:6])
+                          + ("…" if len(dela) > 6 else ".")
+                          if dela else f"Ainda sem textos em {cfg['nome']}.")).strip(),
             caminho=f"{s['pasta']}/", conteudo=corpo,
             jsonld={"@context": "https://schema.org", "@type": "CollectionPage",
                     "name": s["titulo"], "url": f"{cfg['url']}/{s['pasta']}/"}))
